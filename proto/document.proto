@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package udelnlp;
+
+option java_package = "edu.delaware.nlp";
+option java_outer_classname = "Protobuf";
+
+message Token {
+	int32 index = 1;
+	string word = 2;
+	string lemma = 3;
+	string pos = 4;
+	int32 char_start = 5;
+	int32 char_end = 6;
+}
+
+message Sentence {
+	int32 index = 1;
+	int32 token_start = 2;
+	int32 token_end = 3;
+	// Note that this parse string only keeps partial information.
+	// I.e., it will be difficult to recover the char offset for the leaf
+	// nodes, since the leaf nodes are normalized, i.e., '(' to '-LRB-'.
+	// In Stanford CoreNLP, we could use CoreAnnotations.CharacterOffsetBeginAnnotation.class
+	// to get the offset stored in the tree node labels, which are lost when
+	// converted to penn treebank format.
+	// TODO: find a way to keep these information instead of using a string.
+
+	//	string parse = 4;
+	message Constituent {
+		int32 index = 1;
+		int32 char_start = 2;
+		int32 char_end = 3;
+		int32 head_char_start = 4;
+		int32 head_char_end = 5;
+		string label = 6;
+		int32 parent = 7;
+		repeated int32 children = 8;
+	}
+	repeated Constituent constituent = 4;
+
+	message Dependency {
+		int32 gov_index = 1;
+		int32 dep_index = 2;
+		string relation = 3;
+	}
+	repeated Dependency dependency = 5;
+}
+
+message Entity {
+	string duid = 1;  // Document-level unique id.
+	int32 char_start = 2;
+	int32 char_end = 3;
+	int32 token_start = 4;
+	int32 token_end = 5;
+	enum EntityType {
+		UNSET = 0;  // This would be the default value.
+		GENE = 1;
+		MIRNA = 2;
+		DISEASE = 3;
+		CHEMICAL = 4;
+		DRUG = 5;
+		SPECIES = 6;
+		SITE = 7;
+		MUTATION = 8;
+		SUBCELLULAR_LOCATION = 9;
+		TRIGGER = 10;
+	}
+	EntityType entity_type = 6;
+	message EntityId {
+		string source = 1;
+		string id_string = 2;
+	}
+	repeated EntityId entity_id = 7;
+	int32 sentence_index = 8;
+}
+
+
+message Relation {
+	string duid = 1;  // Document-level unique id.
+	string relation_type = 2;
+	message Argument {
+		string role = 1;
+		string entity_duid = 2;
+	}
+	repeated Argument argument = 3;
+	message Attribute {
+		string key = 1;
+		string value = 2;
+	}
+	repeated Attribute attribute = 4;
+}
+
+message Document {
+	string doc_id = 1;
+	string text = 2;
+	repeated Token token = 3;
+	repeated Sentence sentence = 4;
+	// Use map and duid to locate entity or relation instead of using a list.
+	// This is for convinience deletion.
+	map<string, Entity> entity = 5;
+	map<string, Relation> relation = 6;
+}
+
+message Request {
+	enum RequestType {
+	     SPLIT = 0;
+	     PARSE = 1;
+	     FIND_HEAD = 2;
+	}
+	RequestType request_type = 1;
+	repeated Document document = 2;
+}
+
+message Response {
+	bool success = 1;
+	repeated Document document = 2;
+}
+
+service NlpService {
+	rpc ProcessDocument (Request) returns (Response) {}
+}
