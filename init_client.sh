@@ -11,7 +11,7 @@ cd ${CWD}/dep
 rm -rf protobuf
 git clone https://github.com/google/protobuf
 cd protobuf
-git checkout tags/v3.0.0-beta-2
+git checkout tags/v3.0.0-beta-1
 
 # Generate configuration files
 ./autogen.sh

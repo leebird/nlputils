@@ -1,4 +1,4 @@
-# -*- coding: <utf-8> -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals, print_function
 import pickle
@@ -8,10 +8,10 @@ from utils.rpc import grpcapi
 
 
 def process_one_document(doc):
-    interface = grpcapi.GrpcInterface()
+    interface = grpcapi.GrpcInterface(host='128.4.20.169')
     request = document_pb2.Request()
     request.request_type = document_pb2.Request.PARSE
-    request.document.append(doc)
+    request.document.extend([doc])
 
     response = interface.process_document(request)
     assert len(response.document) == 1
@@ -19,7 +19,7 @@ def process_one_document(doc):
 
 
 def run():
-    text = 'MicroRNAs (miRNAs) are small non-coding RNAs of ∼19-24 ' \
+    text = u'MicroRNAs (miRNAs) are small non-coding RNAs of ∼19-24 ' \
            'nucleotides (nt) in length and considered as potent ' \
            'regulators of gene expression at transcriptional and ' \
            'post-transcriptional levels. Here we report the identification ' \
@@ -45,7 +45,7 @@ def run():
            'also contributes towards the better understanding of miRNA-mediated ' \
            'gene regulatory processes in plants.'
 
-    doc = document_pb2.Document
+    doc = document_pb2.Document()
     doc.doc_id = '26815768'
     doc.text = text
     result = process_one_document(doc)
