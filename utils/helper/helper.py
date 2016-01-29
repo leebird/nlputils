@@ -5,7 +5,7 @@ import json
 import uuid
 from protolib.python import document_pb2
 import shortuuid
-from nlp.brat import parser, mapping
+from ..brat import parser, mapping
 from collections import defaultdict, namedtuple
 
 

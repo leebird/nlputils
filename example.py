@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import unicode_literals, print_function
-import pickle
-
 from protolib.python import document_pb2
 from utils.rpc import grpcapi
 
