@@ -40,6 +40,9 @@ make
 #sudo make install
 
 # Install Python modules.
+# Update pip.
+pip install -U pip
+
 # Protobuf Python module.
 cd ${CWD}/dep/protobuf/python
 python setup.py install
