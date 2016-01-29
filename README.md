@@ -9,13 +9,13 @@
 
 ## Initialization
 - First create a python virtual enviroment: `virtualenv --python=python2 env`
-- Activate the virtual enviroment: `. env/bin/activate`
+- Activate the virtual enviroment: `. env/bin/activate` for bash or `source env/bin/activate.csh` for tcsh
 - Set up environment path variables: `. export_path.sh` for bash or `source tcsh_export_path.sh` for tcsh
 - Run the initialization script: `sh init_client.sh`
 - Compile document.proto to generate python codes: `sh compile_document_proto.sh`
 
 ## Example
-- Activate the virtual enviroment: `. env/bin/activate`
+- Activate the virtual enviroment: `. env/bin/activate` for bash or `source env/bin/activate.csh` for tcsh
 - Set up environment path variables: `. export_path.sh` for bash or `source tcsh_export_path.sh` for tcsh
 - Run `python example.py`, it should print a list of structured information.
 
