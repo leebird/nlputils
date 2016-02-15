@@ -14,7 +14,7 @@ GRPC_JAVA_VERSION="v0.12.0"
 SCRIPT_CWD=$PWD
 CWD="$(dirname ${SCRIPT_CWD})"
 echo $CWD
-mkdir $CWD/dep
+mkdir -p $CWD/dep
 
 # Download packages from Github.
 # https://github.com/google/protobuf/releases

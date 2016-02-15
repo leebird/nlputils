@@ -3,7 +3,7 @@ SCRIPT_CWD=$PWD
 CWD="$(dirname ${SCRIPT_CWD})"
 
 # Compile-time C headers path.
-CPATH=${CWD}/dep/grpc/include:$CPATH
+CPATH=${CWD}/dep/grpc/include:${CWD}/dep/protobuf/src:$CPATH
 export CPATH
 
 # Link-time library path.
