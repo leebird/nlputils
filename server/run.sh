@@ -10,5 +10,5 @@ CLASSPATH="lib/stanford-corenlp-3.6.0.jar\
 :lib/hpack-1.0.1.jar\
 :../protolib/java/:bin"
 
-java -classpath ${CLASSPATH} StanfordServer 8900 20 60
+java -classpath ${CLASSPATH} StanfordServer 8900 20 300
 #java -classpath ${CLASSPATH} StanfordLocal
