@@ -85,3 +85,6 @@ cd ${CWD}/dep/grpc-java/compiler
 # To test the plugin with the compiler:
 ../gradlew test
 
+# Other Python modules.
+pip install shortuuid
+
