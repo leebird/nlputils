@@ -190,6 +190,10 @@ class DocHelper(object):
                 entity.sentence_index = sentence.index
                 break
 
+    def fill_all_entity_using_char_offset(self):
+        for entity_id, entity in self.doc.entity.items():
+            self.fill_entity_using_char_offset(entity)                
+            
     def dependencpy_for_brat(self, sentence):
         count = 1
         entities = []
@@ -217,9 +221,11 @@ class DocHelper(object):
                                               ['Dependent', dep_tid]]])
             count += 1
 
-        return {'Annotation': {'text': sent_text,
-                               'entities': entities,
-                               'relations': relations}}
+        return {
+            'text': sent_text,
+            'entities': entities,
+            'relations': relations
+        }
 
     @staticmethod
     def has_conjunction(sentence, constituent):
