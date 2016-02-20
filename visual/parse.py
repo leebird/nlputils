@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, send_from_directory
 from protolib.python import document_pb2
 from utils.rpc.grpcapi import GrpcInterface
 from utils.helper import DocHelper
-from utils.dependency.graph import DependencyGraph
 import json
 
 app = Flask(__name__, static_url_path='/brat', static_folder='brat')
@@ -34,12 +33,14 @@ def parse():
         parsed = process_one_document(doc)
         helper = DocHelper(parsed)
 
-        graph = DependencyGraph()
-        graph.build_from_proto(parsed.sentence[0].dependency)
-
         # Convert the dependency parse to json, which can be visualized by brat.
-        brat = helper.dependencpy_for_brat(parsed.sentence[0])
-        brat_string = json.dumps(brat)
+        # Support multiple sentences.
+        brat_sentences = {}
+        for sentence in parsed.sentence:
+            brat_data = helper.dependencpy_for_brat(sentence)
+            brat_sentences[sentence.index] = brat_data
+            
+        brat_string = json.dumps(brat_sentences)
 
         return render_template('index.html', text=text, brat_string=brat_string)
     else:
