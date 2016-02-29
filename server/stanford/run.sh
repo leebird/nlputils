@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+mkdir -p bin
+
 # Don't use stanford-corenlp-full-2015-04-20/* as there is a protobuf.jar under Stanford CoreNLP folder!!!
 CLASSPATH="lib/stanford-corenlp-3.6.0.jar\
 :lib/stanford-corenlp-3.6.0-models.jar\

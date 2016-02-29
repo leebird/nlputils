@@ -14,12 +14,12 @@ GRPC_JAVA_VERSION="v0.12.0"
 SCRIPT_CWD=$PWD
 CWD="$(dirname ${SCRIPT_CWD})"
 echo $CWD
+rm -rf $CWD/dep
 mkdir -p $CWD/dep
 
 # Download packages from Github.
 # https://github.com/google/protobuf/releases
 cd ${CWD}/dep
-rm -rf protobuf
 git clone https://github.com/google/protobuf
 cd protobuf
 git checkout tags/${PROTOBUF_VERSION}
@@ -27,7 +27,6 @@ git checkout tags/${PROTOBUF_VERSION}
 # The C++ based grpc stack, including python and other languages.
 # https://github.com/grpc/grpc
 cd ${CWD}/dep
-rm -rf grpc
 git clone https://github.com/grpc/grpc
 cd grpc
 git checkout tags/${GRPC_VERSION}
@@ -86,5 +85,5 @@ cd ${CWD}/dep/grpc-java/compiler
 ../gradlew test
 
 # Other Python modules.
-pip install shortuuid
-
+pip install -U shortuuid
+pip install -U bllipparser
