@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "document.proto";
+
+package udelnlp;
+
+option java_package = "edu.delaware.nlp";
+option java_outer_classname = "RpcProto";
+
+// Use Bllip parser to parse a list of sentences, stored in
+// a map table. Using map can explicitly detect missing parses
+// caused by parse errors instead of relying on in-list position.
+message BllipParserRequest {
+	map<string, string> sentence = 1;
+}
+
+message BllipParserResponse {
+	bool success = 1;
+	map<string, string> parse = 2;
+}
+
+service BllipParser {
+	rpc Parse (BllipParserRequest) returns (BllipParserResponse) {}
+}
+
+// A end-to-end parse service.
+message Request {
+	enum RequestType {
+		SPLIT = 0;
+		PARSE_STANFORD = 1;
+		PARSE_BLLIP = 2;
+	}
+	RequestType request_type = 1;
+	repeated Document document = 2;
+}
+
+message Response {
+	bool success = 1;
+	repeated Document document = 2;
+}
+
+service NlpService {
+	rpc ProcessDocument (Request) returns (Response) {}
+}
