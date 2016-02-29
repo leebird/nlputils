@@ -70,3 +70,4 @@ protolib/
 *.iml
 .idea/
 bin/
+model/

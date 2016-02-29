@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import ExpirationError
-from protolib.python import document_pb2
+from protolib.python import document_pb2, rpc_pb2
 import multiprocessing as mp
 import threading
 import logging
@@ -16,7 +16,7 @@ class GrpcInterface(object):
         self.thread_pool_size = thread_pool_size
         self.host = host
         self.channel = implementations.insecure_channel(self.host, self.port)
-        self.stub = document_pb2.beta_create_NlpService_stub(self.channel,
+        self.stub = rpc_pb2.beta_create_NlpService_stub(self.channel,
                                                              pool_size=self.thread_pool_size)
         
     def process_document(self, request):
@@ -24,7 +24,7 @@ class GrpcInterface(object):
             return self.stub.ProcessDocument(request, self.timeout_seconds)
         except ExpirationError:
             logging.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
-            return document_pb2.Response()
+            return rpc_pb2.Response()
 
 
 def _request_processor(interface, inqueue, dequeue):
@@ -33,7 +33,7 @@ def _request_processor(interface, inqueue, dequeue):
         if request_bytes is None:
             dequeue.put(None)
             break
-        request = document_pb2.Request()
+        request = rpc_pb2.Request()
         request.ParseFromString(request_bytes)
         response = interface.process_document(request)
         dequeue.put(response.SerializeToString())
@@ -67,7 +67,7 @@ def get_queue(host, request_thread_num, iterable_request):
         bytes = dequeue.get()
         if bytes is None:
             break
-        response = document_pb2.Response()
+        response = rpc_pb2.Response()
         response.ParseFromString(bytes)
         yield response        
 
@@ -97,11 +97,11 @@ def _request_processor_masked(interface, inqueue, dequeue):
             dequeue.put(None)
             break
 
-        request = document_pb2.Request()
+        request = rpc_pb2.Request()
         request.ParseFromString(request_bytes[0])
         original_response = interface.process_document(request)
 
-        request = document_pb2.Request()
+        request = rpc_pb2.Request()
         request.ParseFromString(request_bytes[1])
         response = interface.process_document(request)
 
@@ -142,11 +142,11 @@ def get_queue_masked(host, request_thread_num, iterable_request):
             break
 
         # Original response.
-        original_response = document_pb2.Response()
+        original_response = rpc_pb2.Response()
         original_response.ParseFromString(bytes[0])
 
         # Masked response.
-        response = document_pb2.Response()
+        response = rpc_pb2.Response()
         response.ParseFromString(bytes[1])
 
         yield original_response, response        

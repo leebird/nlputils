@@ -1,18 +1,36 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
-from protolib.python import document_pb2
+from protolib.python import document_pb2, rpc_pb2
 from utils.rpc import grpcapi
 
 
-def process_one_document(doc):
-    interface = grpcapi.GrpcInterface(host='128.4.20.169')
-    request = document_pb2.Request()
-    request.request_type = document_pb2.Request.PARSE
-    request.document.extend([doc])
-
+def process_one_document(request):
+    #interface = grpcapi.GrpcInterface(host='128.4.20.169')
+    interface = grpcapi.GrpcInterface(host='localhost')
     response = interface.process_document(request)
     assert len(response.document) == 1
     return response.document[0]
+
+
+def parse_using_bllip(doc):
+    request = rpc_pb2.Request()
+    request.request_type = rpc_pb2.Request.PARSE_BLLIP
+    request.document.extend([doc])
+    return process_one_document(request)
+
+
+def parse_using_stanford(doc):
+    request = rpc_pb2.Request()
+    request.request_type = rpc_pb2.Request.PARSE_STANFORD
+    request.document.extend([doc])
+    return process_one_document(request)
+
+
+def split_using_stanford(doc):
+    request = rpc_pb2.Request()
+    request.request_type = rpc_pb2.Request.SPLIT
+    request.document.extend([doc])
+    return process_one_document(request)
 
 
 def run():
@@ -42,12 +60,21 @@ def run():
            'also contributes towards the better understanding of miRNA-mediated ' \
            'gene regulatory processes in plants.'
 
-    doc = document_pb2.Document()
-    doc.doc_id = '26815768'
-    doc.text = text
-    result = process_one_document(doc)
+    raw_doc = document_pb2.Document()
+    raw_doc.doc_id = '26815768'
+    raw_doc.text = text
+
+    # Parse using Bllip parser.
+    result = parse_using_bllip(raw_doc)
     print(result)
 
+    # Parse Using Stanford CoreNLP parser.
+    result = parse_using_stanford(raw_doc)
+    print(result)
+
+    # Only split sentences using Stanford CoreNLP.
+    result = split_using_stanford(raw_doc)
+    print(result)
 
 if __name__ == '__main__':
     run()
