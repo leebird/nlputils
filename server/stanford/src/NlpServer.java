@@ -33,8 +33,8 @@ import java.util.Properties;
 
 // The codes below are largely based on http://www.grpc.io/docs/tutorials/basic/java.html.
 
-public class BllipServer {
-    private static final Logger logger = Logger.getLogger(BllipServer.class.getName());
+public class NlpServer {
+    private static final Logger logger = Logger.getLogger(NlpServer.class.getName());
     private final int port;
     private final int maxConcurrentCalls;
     private final int maxParseSeconds;
@@ -43,7 +43,7 @@ public class BllipServer {
 
     private Server server;
 
-    public BllipServer(int port, int maxConcurrentCalls, int maxParseSeconds, String bllipParserHost, int bllipParserPort) {
+    public NlpServer(int port, int maxConcurrentCalls, int maxParseSeconds, String bllipParserHost, int bllipParserPort) {
         this.port = port;
         this.maxConcurrentCalls = maxConcurrentCalls;
         this.maxParseSeconds = maxParseSeconds;
@@ -67,7 +67,7 @@ public class BllipServer {
             public void run() {
                 // Use stderr here since the logger may has been reset by its JVM shutdown hook.
                 System.err.println("*** shutting down gRPC server since JVM is shutting down");
-                BllipServer.this.stop();
+                NlpServer.this.stop();
                 System.err.println("*** server shut down");
             }
         });
@@ -98,7 +98,7 @@ public class BllipServer {
         int maxParseSeconds = Integer.parseInt(args[2]);
         String bllipParserHost = args[3];
         int bllipParserPort = Integer.parseInt(args[4]);
-        BllipServer server = new BllipServer(port, maxConcurrentCalls, maxParseSeconds,
+        NlpServer server = new NlpServer(port, maxConcurrentCalls, maxParseSeconds,
                 bllipParserHost, bllipParserPort);
         try {
             server.start();
