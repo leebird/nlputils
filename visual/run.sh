@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-PYTHONPATH=.. python parse.py
+PYTHONPATH=.. python server.py

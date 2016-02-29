@@ -35,7 +35,9 @@
         );
 
 
-        var docList = eval({{ brat_string | safe }});
+        var docListStanford = eval({{ brat_string_stanford | safe }});
+        var docListBllip = eval({{ brat_string_bllip | safe }});
+
         var collData = {
             "visual_options": {"arc_bundle": "none"},
             "protocol": 1,
@@ -625,9 +627,14 @@
             "relation_attribute_types": []
         };
         head.ready(function () {
-            for (var doc in docList) {
-                $('#container').append('<div><h3>' + doc + '</h3></div>' + '<div id="doc-' + doc + '"></div><br />');
-                Util.embed('doc-'+doc, collData, docList[doc], webFontURLs);
+            for (var doc in docListBllip) {
+                $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="bli-doc-' + doc + '"></div><br />');
+                Util.embed('bli-doc-'+doc, collData, docListBllip[doc], webFontURLs);
+                <!-- Assume they have the same length -->
+                $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + '<div id="stf-doc-' + doc + '"></div><br />');
+                Util.embed('stf-doc-'+doc, collData, docListStanford[doc], webFontURLs);
+                $('#wrapper').append('<br><br>');
+
             }
         });
     </script>
@@ -637,7 +644,6 @@
         table {
             border-collapse: collapse;
         }
-
         td {
             border: 1px solid #000000;
             padding: 5px;
@@ -651,8 +657,6 @@
     <textarea name="text" id="text" rows=4 cols=100>{{ text }}</textarea><br/>
     <input type="submit"/>
 </form>
-
-<div id="container"></div>
-
+<div id="wrapper" style="width:100%;"></div>
 </body>
 </html>
