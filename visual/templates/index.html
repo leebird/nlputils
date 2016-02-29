@@ -628,10 +628,10 @@
         };
         head.ready(function () {
             for (var doc in docListBllip) {
-                $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="bli-doc-' + doc + '"></div><br />');
+                $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + '<div id="bli-doc-' + doc + '"></div><br />');
                 Util.embed('bli-doc-'+doc, collData, docListBllip[doc], webFontURLs);
                 <!-- Assume they have the same length -->
-                $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + '<div id="stf-doc-' + doc + '"></div><br />');
+                $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="stf-doc-' + doc + '"></div><br />');
                 Util.embed('stf-doc-'+doc, collData, docListStanford[doc], webFontURLs);
                 $('#wrapper').append('<br><br>');
 
