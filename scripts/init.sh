@@ -5,10 +5,10 @@ set -e
 
 # Set version tags. Please check the corresponding git repo
 # for correct tags.
-PROTOBUF_VERSION="v3.0.0-beta-1"
+PROTOBUF_VERSION="v3.0.0-beta-2"
 # 02/12/2016 Currently grpc has compile error using protobuf v3 beta 2.
-GRPC_VERSION="release-0_12_0"
-GRPC_JAVA_VERSION="v0.12.0"
+GRPC_VERSION="release-0_13_0"
+GRPC_JAVA_VERSION="v0.13.1"
 
 # Set folder.
 SCRIPT_CWD=$PWD
@@ -73,7 +73,9 @@ python setup.py install
 cd ${CWD}
 pip install grpcio
 
-# Grpc java library.
+# Grpc java library compiler.
+# Here we only build the compiler, the libarary jar file can be downloaded
+# from maven as other dependencies.
 cd ${CWD}/dep/grpc-java/compiler
 # To build, https://github.com/grpc/grpc-java/blob/master/COMPILING.md
 # The plugin binds the rpc stack with protobuf
