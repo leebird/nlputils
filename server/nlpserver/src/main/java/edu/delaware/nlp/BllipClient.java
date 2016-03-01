@@ -1,16 +1,10 @@
-import edu.delaware.nlp.BllipParserGrpc;
+package edu.delaware.nlp;
+
 import edu.delaware.nlp.BllipParserGrpc.BllipParserBlockingStub;
-import edu.delaware.nlp.RpcProto;
-import com.google.protobuf.TextFormat;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;

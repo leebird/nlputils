@@ -1,3 +1,5 @@
+package edu.delaware.nlp;
+
 import edu.delaware.nlp.DocumentProto;
 import edu.delaware.nlp.RpcProto;
 import edu.delaware.nlp.NlpServiceGrpc;
@@ -126,7 +128,7 @@ public class NlpServer {
             sdutil = new StanfordUtil("tokenize, ssplit, pos, lemma, parse", maxParseSeconds);
         }
 
-        @Override
+//        @Override
         public void processDocument(RpcProto.Request request, StreamObserver<RpcProto.Response> responseObserver) {
             RpcProto.Response.Builder rbuilder = RpcProto.Response.newBuilder();
             rbuilder.setSuccess(true);
