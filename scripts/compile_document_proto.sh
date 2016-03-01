@@ -2,8 +2,8 @@
 set -e
 
 # Create folders.
-rm -r ../protolib/python
-rm -r ../protolib/java
+rm -rf ../protolib/python
+rm -rf ../protolib/java
 mkdir -p ../protolib/python
 mkdir -p ../protolib/java
 touch ../protolib/python/__init__.py
