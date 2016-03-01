@@ -57,7 +57,6 @@ def parse():
         parse_stanford = parse_using_stanford(doc)
         brat_bllip = json.dumps(get_brat_data(parse_bllip))
         brat_stanford = json.dumps(get_brat_data(parse_stanford))
-        print(brat_stanford)
 
         return render_template('index.html', text=text,
                                brat_string_bllip=brat_bllip,
