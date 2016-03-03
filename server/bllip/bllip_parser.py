@@ -15,8 +15,12 @@ class BllipParser(object):
         if type(text) is not unicode:
             raise ValueError('Input must be unicode string')
         sentence = Sentence(text.encode('utf8'))
-        parse_tree = self.rrp.simple_parse(sentence)
-        return parse_tree.decode('utf8')    
+        # If any error happens, just return None.
+        try:
+            parse_tree = self.rrp.simple_parse(sentence)
+            return parse_tree.decode('utf8')
+        except:
+            return None
 
     '''
     def tag_one_sentence(self, text):

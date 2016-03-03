@@ -12,17 +12,19 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
         print('Parser created...', file=sys.stderr)
 
     def Parse(self, request, context):
-        result = {}
         response = rpc_pb2.BllipParserResponse()
         for sid, sentence in request.sentence.items():
             parse_tree = self.parser.parse_one_sentence(sentence)
-            response.parse[sid] = parse_tree
+            if parse_tree is not None:
+                response.parse[sid] = parse_tree
         return response
 
 
 def serve():
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(), pool_size=20)
+    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(),
+                                                    pool_size=20,
+                                                    default_timeout=600)
     server.add_insecure_port('[::]:8901')
     server.start()
     try:
