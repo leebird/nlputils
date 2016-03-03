@@ -105,6 +105,10 @@ public class StanfordUtil {
             charIndex += sentence_text.length();
 
             if (parse == null) {
+                // We skip sentences with no parse, but the necessary index
+                // will be updated properly, except tokenIndex, sentIndex will
+                // skip the current sentence. Seems OK but may need to find a
+                // better way to handle the missing parses.
                 System.err.println("Sentence parse error");
                 continue;
             }

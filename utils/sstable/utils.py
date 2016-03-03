@@ -18,12 +18,12 @@ class SSTable(object):
     def delete(self, key):
         self.table.Delete(key)
 
-    def write_batch(self):
-        return leveldb.WriteBatch()
-
-    def write(self, batch):
+    def write_documents(self, documents):
+        batch = leveldb.WriteBatch()
+        for doc in documents:
+            batch.Put(doc.doc_id, doc.SerializeToString())
         self.table.Write(batch, sync=True)
-    
+
     def __iter__(self):
         return self.table.RangeIter()
 

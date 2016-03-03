@@ -63,10 +63,14 @@ def get_queue(host, request_thread_num, iterable_request):
         thread.start()
 
     print('Read from output queue...')
+    exited_thread = 0
     while True:
         bytes = dequeue.get()
         if bytes is None:
-            break
+            exited_thread += 1
+            if exited_thread == request_thread_num:
+                break
+            continue
         response = rpc_pb2.Response()
         response.ParseFromString(bytes)
         yield response        

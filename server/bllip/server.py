@@ -22,7 +22,7 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
 
 def serve():
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer())
+    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(), pool_size=20)
     server.add_insecure_port('[::]:8901')
     server.start()
     try:

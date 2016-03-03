@@ -128,7 +128,6 @@ public class NlpServer {
             sdutil = new StanfordUtil("tokenize, ssplit, pos, lemma, parse", maxParseSeconds);
         }
 
-//        @Override
         public void processDocument(RpcProto.Request request, StreamObserver<RpcProto.Response> responseObserver) {
             RpcProto.Response.Builder rbuilder = RpcProto.Response.newBuilder();
             rbuilder.setSuccess(true);
