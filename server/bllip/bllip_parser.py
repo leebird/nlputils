@@ -1,7 +1,10 @@
 from bllipparser import Sentence, tokenize, RerankingParser, Tree
 import os
 
-
+# NOTE that this BLLIP parser is not thead-safe. See
+# https://github.com/dmcc/bllip-parser/blob/master/python/bllipparser/RerankingParser.py#L537
+# add first stage's README. So we can't use BLLIP parser
+# in multi-threads.
 class BllipParser(object):
     def __init__(self):
         curr_path = os.path.realpath(__file__)

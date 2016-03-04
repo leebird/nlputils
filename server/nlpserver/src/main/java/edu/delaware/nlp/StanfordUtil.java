@@ -30,10 +30,12 @@ import java.util.TreeSet;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class StanfordUtil {
-
+    private static final Logger logger = Logger.getLogger(StanfordUtil.class.getName());
     private final String annotators;
     private final int maxParseSeconds;
     private StanfordCoreNLP pipeline;
@@ -88,7 +90,7 @@ public class StanfordUtil {
                                                   Map<String, String> parses) {
         String text = protoDoc.getText();
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
-
+	
         int tokenIndex = 0;
         int sentIndex = 0;
         int charIndex = 0;
@@ -109,7 +111,7 @@ public class StanfordUtil {
                 // will be updated properly, except tokenIndex, sentIndex will
                 // skip the current sentence. Seems OK but may need to find a
                 // better way to handle the missing parses.
-                System.err.println("Sentence parse error");
+		logger.warning("Sentence parse error: " + protoDoc.getDocId() + ", sentence " + i);
                 continue;
             }
 
