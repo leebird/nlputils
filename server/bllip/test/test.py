@@ -10,7 +10,9 @@ def test_bllip_parser():
     sentences = ['I have a book.',
                  'The expressions of collagen I, collagen III, NADPH oxidase 4 '
                  '(NOX4) and nuclear factor-kappa B (NF-κB) were analyzed by '
-                 'immunohistochemisty, qPCR and (or) Western blot.']
+                 'immunohistochemisty, qPCR and (or) Western blot.',
+                 '[miR-126 inhibits colon cancer proliferation and invasion '
+                 'through targeting IRS1, SLC7A5 and TOM1 gene].']
     
     for sent in sentences:
         parse_tree = parser.parse_one_sentence(sent)

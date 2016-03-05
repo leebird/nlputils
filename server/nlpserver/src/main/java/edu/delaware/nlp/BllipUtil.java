@@ -1,6 +1,7 @@
 package edu.delaware.nlp;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class BllipUtil {
     private static final HashMap<String, String> pennTreeUnEscape;
@@ -15,10 +16,12 @@ public class BllipUtil {
     }
 
     public static String unescape(String word) {
-        String original = BllipUtil.pennTreeUnEscape.get(word);
-        if(original != null) {
-            return original;
-        }
+	for(Map.Entry<String, String> entry : BllipUtil.pennTreeUnEscape.entrySet()) {
+	    String pennEscaped = entry.getKey();
+	    String original = entry.getValue();	
+	    word = word.replace(pennEscaped, original);
+	}
+
         return word;
     }
 }
