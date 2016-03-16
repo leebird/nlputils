@@ -20,6 +20,7 @@ import edu.stanford.nlp.trees.CollinsHeadFinder;
 import edu.stanford.nlp.trees.UniversalEnglishGrammaticalStructure;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.ling.HasOffset;
+import edu.stanford.nlp.process.Morphology;
 
 //import java.util.*;
 import java.util.List;
@@ -90,7 +91,8 @@ public class StanfordUtil {
                                                   Map<String, String> parses) {
         String text = protoDoc.getText();
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
-	
+	    Morphology morph = new Morphology();
+
         int tokenIndex = 0;
         int sentIndex = 0;
         int charIndex = 0;
@@ -153,7 +155,8 @@ public class StanfordUtil {
                 DocumentProto.Token.Builder tbuilder = DocumentProto.Token.newBuilder();
                 tbuilder.setWord(unescaped);
                 tbuilder.setPos(pos);
-                // TODO: add lemma for bllip parser results.
+                // Add lemma for bllip parser token.
+                tbuilder.setLemma(morph.lemma(unescaped, pos));
                 // tbuilder.setLemma(token.lemma());
                 tbuilder.setCharStart(wordCharStart);
                 tbuilder.setCharEnd(wordCharEnd);
