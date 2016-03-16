@@ -17,7 +17,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.trees.CollinsHeadFinder;
-import edu.stanford.nlp.trees.EnglishGrammaticalStructure;
+import edu.stanford.nlp.trees.UniversalEnglishGrammaticalStructure;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.ling.HasOffset;
 
@@ -186,7 +186,7 @@ public class StanfordUtil {
 
             // this is the Stanford dependency graph of the current sentence
             // Generated from Billip parser.
-            EnglishGrammaticalStructure sd = new EnglishGrammaticalStructure(tree);
+            UniversalEnglishGrammaticalStructure sd = new UniversalEnglishGrammaticalStructure(tree);
             SemanticGraph dependencies = new SemanticGraph(sd.typedDependenciesCCprocessed());
             buildDependency(sbuilder, dependencies, indexMap);
 
