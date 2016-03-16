@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from protolib.python import document_pb2, rpc_pb2
 from utils.rpc import grpcapi
 
 
 def process_one_document(request):
-    #interface = grpcapi.GrpcInterface(host='128.4.20.169')
-    interface = grpcapi.GrpcInterface(host='localhost')
+    # Use biotm2 as server.
+    interface = grpcapi.GrpcInterface(host='128.4.20.169')
+    #interface = grpcapi.GrpcInterface(host='localhost')
     response = interface.process_document(request)
     assert len(response.document) == 1
     return response.document[0]
