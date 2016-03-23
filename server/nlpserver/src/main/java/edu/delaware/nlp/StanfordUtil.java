@@ -22,6 +22,7 @@ import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
+import edu.stanford.nlp.process.Morphology;
 
 //import java.util.*;
 import java.util.List;
@@ -39,22 +40,25 @@ import java.util.logging.Logger;
 
 public class StanfordUtil {
     private static final Logger logger = Logger.getLogger(StanfordUtil.class.getName());
-    private final String annotators;
+    private final String parseAnnotators;
+    private final String splitAnnotators;
     private final int maxParseSeconds;
-    private StanfordCoreNLP pipeline;
+    private StanfordCoreNLP parsePipeline;
+    private StanfordCoreNLP splitPipeline;
     private CollinsHeadFinder headFinder;
 
-    public StanfordUtil(String annotators, int maxParseSeconds) {
-        this.annotators = annotators;
+    public StanfordUtil(int maxParseSeconds) {
+        this.parseAnnotators = "tokenize, ssplit, pos, lemma, parse";
+        this.splitAnnotators = "tokenize, ssplit, pos, lemma";
         this.maxParseSeconds = maxParseSeconds;
         loadPipeline();
     }
 
-    public StanfordUtil(String annotators) {
-        this.annotators = annotators;
-        this.maxParseSeconds = 0;
-        loadPipeline();
-    }
+//    public StanfordUtil(String annotators) {
+//        this.annotators = annotators;
+//        this.maxParseSeconds = 0;
+//        loadPipeline();
+//    }
 
     private void loadPipeline() {
         // Initialize StanfordNLP pipeline.
@@ -64,8 +68,13 @@ public class StanfordUtil {
         if (maxParseSeconds > 0) {
             props.setProperty("parse.maxtime", Integer.toString(maxParseSeconds * 1000));
         }
-        props.setProperty("annotators", annotators);
-        pipeline = new StanfordCoreNLP(props);
+        props.setProperty("annotators", parseAnnotators);
+        parsePipeline = new StanfordCoreNLP(props);
+
+        props = new Properties();
+        props.setProperty("annotators", splitAnnotators);
+        splitPipeline = new StanfordCoreNLP(props);
+
         headFinder = new CollinsHeadFinder();
     }
 
@@ -73,7 +82,7 @@ public class StanfordUtil {
         // create an empty Annotation just with the given text
         Annotation document = new Annotation(text);
         // run all Annotators on this text
-        pipeline.annotate(document);
+        splitPipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
@@ -96,6 +105,8 @@ public class StanfordUtil {
     
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
     
+	    Morphology morph = new Morphology();
+
         int tokenIndex = 0;
         int sentIndex = 0;
         int charIndex = 0;
@@ -157,7 +168,8 @@ public class StanfordUtil {
                 DocumentProto.Token.Builder tbuilder = DocumentProto.Token.newBuilder();
                 tbuilder.setWord(unescaped);
                 tbuilder.setPos(pos);
-                // TODO: add lemma for bllip parser results.
+                // Add lemma for bllip parser token.
+                tbuilder.setLemma(morph.lemma(unescaped, pos));
                 // tbuilder.setLemma(token.lemma());
                 tbuilder.setCharStart(wordCharStart);
                 tbuilder.setCharEnd(wordCharEnd);
@@ -217,7 +229,7 @@ public class StanfordUtil {
         Annotation document = new Annotation(text);
 
         // run all Annotators on this text
-        pipeline.annotate(document);
+        parsePipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
@@ -281,7 +293,7 @@ public class StanfordUtil {
         Annotation document = new Annotation(text);
 
         // run all Annotators on this text
-        pipeline.annotate(document);
+        splitPipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types

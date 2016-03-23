@@ -10,7 +10,7 @@ from utils.rpc import grpcapi
 def process_one_document(request):
     # Use biotm2 as server.
     interface = grpcapi.GrpcInterface(host='128.4.20.169')
-    #interface = grpcapi.GrpcInterface(host='localhost')
+    # interface = grpcapi.GrpcInterface(host='localhost')
     response = interface.process_document(request)
     assert len(response.document) == 1
     return response.document[0]
@@ -77,8 +77,9 @@ def run():
     print(result)
 
     # Only split sentences using Stanford CoreNLP.
-    result = split_using_stanford(raw_doc)
-    print(result)
+    for i in range(100):
+        result = split_using_stanford(raw_doc)
+        print('Split {} documents'.format(i))
 
 if __name__ == '__main__':
     run()

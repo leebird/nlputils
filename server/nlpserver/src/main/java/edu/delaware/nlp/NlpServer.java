@@ -125,7 +125,7 @@ public class NlpServer {
             this.bllipParserHost = bllipParserHost;
             this.bllipParserPort = bllipParserPort;
             // Load stanford util.
-            sdutil = new StanfordUtil("tokenize, ssplit, pos, lemma, parse", maxParseSeconds);
+            sdutil = new StanfordUtil(maxParseSeconds);
         }
 
         public void processDocument(RpcProto.Request request, StreamObserver<RpcProto.Response> responseObserver) {
