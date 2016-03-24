@@ -199,7 +199,7 @@ public class StanfordUtil {
             sentIndex++;
 
 
-            buildConstituent(sbuilder, tree);
+            buildConstituent(sbuilder, tree, indexMap);
 
             // this is the Stanford dependency graph of the current sentence
             // Generated from Billip parser.
@@ -275,7 +275,7 @@ public class StanfordUtil {
 
             // this is the parse tree of the current sentence
             Tree tree = sentence.get(TreeAnnotation.class);
-            buildConstituent(sbuilder, tree);
+            buildConstituent(sbuilder, tree, indexMap);
 
             // this is the Stanford dependency graph of the current sentence
             SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
@@ -306,7 +306,7 @@ public class StanfordUtil {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
             int sentenceBoundary = -1;
-            HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
+            // HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
 
             for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
@@ -327,7 +327,7 @@ public class StanfordUtil {
                 tbuilder.setCharEnd(token.endPosition() - 1);
                 tbuilder.setIndex(tokenIndex);
                 dbuilder.addToken(tbuilder);
-                indexMap.put(token.index(), tokenIndex);
+                // indexMap.put(token.index(), tokenIndex);
                 sentenceBoundary = tokenIndex;
                 tokenIndex++;
             }
@@ -390,7 +390,6 @@ public class StanfordUtil {
             depBuilder.setRelation("root");
             sbuilder.addDependency(depBuilder);
         }
-        HashMap<Integer, TreeSet<Integer>> childrenMap = new HashMap<Integer, TreeSet<Integer>>();
 
         // This only gets basic dependencies.
         // Collection<TypedDependency> typedDeps = dependencies.typedDependencies();
@@ -418,7 +417,9 @@ public class StanfordUtil {
         }
     }
 
-    private void buildConstituent(DocumentProto.Sentence.Builder sbuilder, Tree tree) {
+    private void buildConstituent(DocumentProto.Sentence.Builder sbuilder,
+                                  Tree tree,
+                                  HashMap<Integer, Integer> indexMap) {
         Tree nextTree = tree;
         Queue<Tree> treeQueue = new LinkedList<Tree>();
         Queue<Integer> parentQueue = new LinkedList<Integer>();
@@ -430,30 +431,46 @@ public class StanfordUtil {
             Tree head = nextTree.headTerminal(headFinder);
             List<Tree> headLeaves = head.getLeaves();
             assert headLeaves.size() == 1;
-            Tree only_leaf = headLeaves.get(0);
+            Tree onlyLeaf = headLeaves.get(0);
+            CoreLabel headToken = (CoreLabel) onlyLeaf.label();
 
             // Get char start and end for the head token.
-            int head_start = ((HasOffset) only_leaf.label()).beginPosition();
+            int headStart = ((HasOffset) onlyLeaf.label()).beginPosition();
             // It looks the end position is the last char index + 1.
-            int head_end = ((HasOffset) only_leaf.label()).endPosition() - 1;
+            int headEnd = ((HasOffset) onlyLeaf.label()).endPosition() - 1;
+            // Get head token index.
+            int headIndex = indexMap.get(headToken.index());
 
             // Get char start and end for the phrase.
             List<Tree> treeLeaves = nextTree.getLeaves();
-            Tree first_leaf = treeLeaves.get(0);
-            Tree last_leaf = treeLeaves.get(treeLeaves.size() - 1);
-            int phrase_start = ((HasOffset) first_leaf.label()).beginPosition();
+            Tree firstLeaf = treeLeaves.get(0);
+            Tree lastLeaf = treeLeaves.get(treeLeaves.size() - 1);
+            int phraseStart = ((HasOffset) firstLeaf.label()).beginPosition();
             // It looks the end position is the last char index + 1.
-            int phrase_end = ((HasOffset) last_leaf.label()).endPosition() - 1;
+            int phraseEnd = ((HasOffset) lastLeaf.label()).endPosition() - 1;
 
-            assert phrase_end >= phrase_start;
-            assert phrase_start >= 0;
+            CoreLabel firstToken = (CoreLabel) firstLeaf.label();
+            CoreLabel lastToken = (CoreLabel) lastLeaf.label();
+
+            int firstTokenIndex = indexMap.get(firstToken.index());
+            int lastTokenIndex = indexMap.get(lastToken.index());
+
+            assert phraseEnd >= phraseStart;
+            assert phraseStart >= 0;
 
             DocumentProto.Sentence.Constituent.Builder cbuilder = DocumentProto.Sentence.Constituent.newBuilder();
             cbuilder.setLabel(nextTree.label().value());
-            cbuilder.setCharStart(phrase_start);
-            cbuilder.setCharEnd(phrase_end);
-            cbuilder.setHeadCharStart(head_start);
-            cbuilder.setHeadCharEnd(head_end);
+
+            // Don't use character offset.
+            // cbuilder.setCharStart(phrase_start);
+            // cbuilder.setCharEnd(phrase_end);
+            // cbuilder.setHeadCharStart(head_start);
+            // cbuilder.setHeadCharEnd(head_end);
+
+            cbuilder.setTokenStart(firstTokenIndex);
+            cbuilder.setTokenEnd(lastTokenIndex);
+            cbuilder.setHeadTokenIndex(headIndex);
+
             cbuilder.setIndex(treeIndex);
             cbuilder.setParent(parentIndex);
             // Add children index to its parent.

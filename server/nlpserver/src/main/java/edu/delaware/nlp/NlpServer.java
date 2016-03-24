@@ -1,37 +1,13 @@
 package edu.delaware.nlp;
 
-import edu.delaware.nlp.DocumentProto;
-import edu.delaware.nlp.RpcProto;
-import edu.delaware.nlp.NlpServiceGrpc;
-import edu.delaware.nlp.BllipParserGrpc;
-import edu.delaware.nlp.BllipParserGrpc.BllipParserBlockingStub;
-import edu.delaware.nlp.BllipUtil;
-import edu.delaware.nlp.StanfordUtil;
-
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 //import java.util.*;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.TreeSet;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.Properties;
 
 // The codes below are largely based on http://www.grpc.io/docs/tutorials/basic/java.html.
 
@@ -146,7 +122,7 @@ public class NlpServer {
                         rbuilder.addDocument(postDoc);
                     }
                 } catch (NullPointerException e) {
-                    // System.out.println("NullPointerException caught");
+                    e.printStackTrace();
                     // rbuilder.addAllDocument(request.getDocumentList());
                     // rbuilder.setSuccess(false);
                     // If timeouts, add the original document.
