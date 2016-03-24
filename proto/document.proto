@@ -14,6 +14,18 @@ message Token {
 	int32 char_end = 6;
 }
 
+message Action {
+	string gov_node = 1;
+	string dep_node = 2;
+	string edge_label = 3;
+}
+
+message Rule {
+	string ident = 1;
+	string regex = 2;
+	repeated Action actions = 3;
+}
+
 message Sentence {
 	int32 index = 1;
 	int32 token_start = 2;
@@ -45,6 +57,20 @@ message Sentence {
 		string relation = 3;
 	}
 	repeated Dependency dependency = 5;
+	
+	message DependencyExtra {
+		int32 gov_index = 1;
+		int32 dep_index = 2;
+		string relation = 3;
+		string rule_id = 4; 
+	}
+	repeated DependencyExtra dependency_extra = 6;
+	
+	message TokenExtra {
+		string name = 1;
+		int32 index = 2;
+	}
+	repeated TokenExtra token_extra = 7;
 }
 
 message Entity {
@@ -99,5 +125,6 @@ message Document {
 	// This is for convinience deletion.
 	map<string, Entity> entity = 5;
 	map<string, Relation> relation = 6;
+	repeated Rule rules = 7;
 }
 

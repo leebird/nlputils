@@ -1,21 +1,17 @@
 package edu.delaware.nlp;
 
-import edu.delaware.nlp.DocumentProto;
-import edu.delaware.nlp.BllipUtil;
-
+import edu.stanford.nlp.ling.*;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.trees.CollinsHeadFinder;
 import edu.stanford.nlp.trees.UniversalEnglishGrammaticalStructure;
 import edu.stanford.nlp.trees.TypedDependency;
@@ -23,6 +19,7 @@ import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
 import edu.stanford.nlp.process.Morphology;
+import edu.stanford.nlp.trees.TreeLemmatizer;
 
 //import java.util.*;
 import java.util.List;
@@ -105,7 +102,7 @@ public class StanfordUtil {
     
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
     
-	    Morphology morph = new Morphology();
+        TreeLemmatizer treeLemmatizer = new TreeLemmatizer();
 
         int tokenIndex = 0;
         int sentIndex = 0;
@@ -126,13 +123,15 @@ public class StanfordUtil {
                 // will be updated properly, except tokenIndex, sentIndex will
                 // skip the current sentence. Seems OK but may need to find a
                 // better way to handle the missing parses.
-        logger.warning("Sentence parse error: " + protoDoc.getDocId() + ", sentence " + i);
+                logger.warning("Sentence parse error: " + protoDoc.getDocId() + ", sentence " + i);
                 continue;
             }
 
             // this is the parse tree of the current sentence
             // obtained from Charniak Bllip parser.
             Tree tree = Tree.valueOf(parse);
+            // Lemmatize the tree from BLLIP parser.
+            tree = treeLemmatizer.transformTree(tree);
             List<Tree> leaves = tree.getLeaves();
 
             // traversing the words in the current sentence
@@ -155,6 +154,7 @@ public class StanfordUtil {
                 String word = leaf.label().value();
                 String pos = preTerminal.label().value();
                 String unescaped = BllipUtil.unescape(word);
+                String lemma = ((HasLemma) leaf.label()).lemma();
                 int wordCharStart = text.indexOf(unescaped, currIndex);
 
                 assert wordCharStart >= 0 : sentence_text;
@@ -169,7 +169,8 @@ public class StanfordUtil {
                 tbuilder.setWord(unescaped);
                 tbuilder.setPos(pos);
                 // Add lemma for bllip parser token.
-                tbuilder.setLemma(morph.lemma(unescaped, pos));
+                // tbuilder.setLemma(morph.lemma(unescaped, pos));
+                tbuilder.setLemma(lemma);
                 // tbuilder.setLemma(token.lemma());
                 tbuilder.setCharStart(wordCharStart);
                 tbuilder.setCharEnd(wordCharEnd);
