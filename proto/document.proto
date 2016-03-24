@@ -29,13 +29,17 @@ message Sentence {
 	//	string parse = 4;
 	message Constituent {
 		int32 index = 1;
-		int32 char_start = 2;
-		int32 char_end = 3;
-		int32 head_char_start = 4;
-		int32 head_char_end = 5;
-		string label = 6;
-		int32 parent = 7;
-		repeated int32 children = 8;
+		// Use token index instead of character offset.
+		int32 token_start = 2;
+		int32 token_end = 3;
+		int32 head_token_index = 4;
+		// int32 char_start = 2;
+		// int32 char_end = 3;
+		// int32 head_char_start = 4;
+		// int32 head_char_end = 5;
+		string label = 5;
+		int32 parent = 6;
+		repeated int32 children = 7;
 	}
 	repeated Constituent constituent = 4;
 
