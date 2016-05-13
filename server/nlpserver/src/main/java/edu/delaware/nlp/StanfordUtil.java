@@ -4,6 +4,7 @@ import edu.stanford.nlp.ling.*;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
@@ -13,6 +14,8 @@ import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.trees.CollinsHeadFinder;
+import edu.stanford.nlp.trees.GrammaticalRelation;
+import edu.stanford.nlp.trees.UniversalEnglishGrammaticalRelations;
 import edu.stanford.nlp.trees.UniversalEnglishGrammaticalStructure;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.ling.HasOffset;
@@ -20,6 +23,7 @@ import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
 import edu.stanford.nlp.process.Morphology;
 import edu.stanford.nlp.trees.TreeLemmatizer;
+import edu.stanford.nlp.international.Language;
 
 //import java.util.*;
 import java.util.List;
@@ -66,6 +70,7 @@ public class StanfordUtil {
             props.setProperty("parse.maxtime", Integer.toString(maxParseSeconds * 1000));
         }
         props.setProperty("annotators", parseAnnotators);
+        props.setProperty("parse.originalDependencies", "true");
         parsePipeline = new StanfordCoreNLP(props);
 
         props = new Properties();
@@ -212,7 +217,7 @@ public class StanfordUtil {
                 List <DocumentProto.Action> actions = rule.getActionsList();
                 SemgrexPattern pat = SemgrexPattern.compile(ruleRegex);
                 SemgrexMatcher mat = pat.matcher(dependencies);
-                buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap);
+                buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap, dependencies);
             }
 
             buildDependency(sbuilder, dependencies, indexMap);
@@ -346,8 +351,11 @@ public class StanfordUtil {
                                       SemgrexMatcher mat,
                                       List <DocumentProto.Action> actions,
                                       String ruleID,
-                                      HashMap<Integer, Integer> indexMap) {
+                                      HashMap<Integer, Integer> indexMap,
+                                      SemanticGraph dependencies) {
+        LinkedList<SemanticGraphEdge> newEdges = new LinkedList<SemanticGraphEdge>();
         while (mat.find()) {
+                ///////////////////////////////////////
             for (DocumentProto.Action action : actions) {
                 String govNodeName = action.getGovNode();
                 String depNodeName = action.getDepNode();
@@ -369,13 +377,23 @@ public class StanfordUtil {
                     depExBuilder.setRelation(edgeLabel);
                     depExBuilder.setRuleId(ruleID);
 
+                    //Store the new edges to a list
+                    SemanticGraphEdge newEdge = new SemanticGraphEdge(govNode,depNode,GrammaticalRelation.valueOf(Language.English,edgeLabel ), Double.NEGATIVE_INFINITY, false);
+                    newEdges.add(newEdge);    
+                    //Changing the dependencies in while(mat.find()) sometimes throws an exception
+                    //dependencies.addEdge(govNode,depNode,GrammaticalRelation.valueOf(Language.English,edgeLabel ), Double.NEGATIVE_INFINITY, false);
+                    
                     sbuilder.addDependencyExtra(depExBuilder);
                     //System.out.println("Samir :" + ruleId + ruleRegex);
                     //System.out.println(govNode.toString() + ">" + edgeLabel + ">" + depNode.toString());
                 }
             }    
-            //System.out.println();
         }
+        //After the rules have been applied add the new edges to the semantic graph (old one)
+        for(SemanticGraphEdge newEdge: newEdges) {
+            dependencies.addEdge(newEdge);
+        }
+        
     }
     private void buildDependency(DocumentProto.Sentence.Builder sbuilder,
                                  SemanticGraph dependencies,

@@ -36,6 +36,111 @@ class DocHelper(object):
 
         return self.doc.text[char_start: char_end + 1]
 
+
+    def getConstituentIndexFromTokenIndex(self,sentence,index):
+        constituents = sentence.constituent
+        for constituent in constituents:
+            childrens = constituent.children
+            if not childrens:
+                label = constituent.label
+                token_start = constituent.token_start
+                token_end = constituent.token_end
+                if index == token_start and index == token_end:
+                    return constituent.index
+
+    def getParentNPIndexFromLeafTokenIndex(self,sentence,index):
+        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,index)
+        constituent = sentence.constituent[constituentIndex]
+        parentConstIndex = constituent.parent
+        childConst = constituent
+        constituent = sentence.constituent[parentConstIndex]
+        label = constituent.label
+        while (label == "NP" or label == "NN" or label == "NNS"):
+            #if label == "NP":
+                #return constituent.index
+            crossedCC = self.constituentContainsCC(sentence,constituent.index)
+            if crossedCC == 1:
+                return childConst.index
+            constituentIndex = constituent.index
+            parentConstIndex = constituent.parent
+            childConst = constituent
+            constituent = sentence.constituent[parentConstIndex]
+            label = constituent.label
+        return childConst.index
+       
+    def constituentContainsCC(self,sentence,index):
+        constituent = sentence.constituent[index]
+        children = constituent.children
+        for child in children:
+            cLabel = sentence.constituent[child].label
+            if cLabel == "CC":
+                return 1
+        return 0    
+
+    def getParentNPIndexFromLeafTokenIndex1(self,sentence,index):
+        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,index)
+        constituent = sentence.constituent[constituentIndex]
+        parentConstIndex = constituent.parent
+        constituent = sentence.constituent[parentConstIndex]
+        label = constituent.label
+        while (label == "NP" or label == "NN" or label == "NNS"):
+            if label == "NP":
+                return constituent.index
+            constituentIndex = constituent.index
+            parentConstIndex = constituent.parent
+            constituent = sentence.constituent[parentConstIndex]
+            label = constituent.label
+        return constituentIndex
+
+    def printExtraDependency(self, sentence,depExtra):
+        govIndex = depExtra.gov_index
+        depIndex = depExtra.dep_index
+        relation = depExtra.relation
+        ruleID = depExtra.rule_id
+       
+        govNode = self.doc.token[govIndex].word
+        depNode = self.doc.token[depIndex].word
+         
+        govParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,govIndex)
+        depParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,depIndex)
+        govParentNP = self.printConstituent(sentence,govParentNPIndex)
+        depParentNP = self.printConstituent(sentence,depParentNPIndex)
+
+        return "Rule ID: " +ruleID + "\nGov: " + govNode + "\t" + govParentNP + "\nRelEdge: "+relation + "\nDep: " + depNode + "\t" + depParentNP + "\n";
+
+
+    def printExtraDependencyAnalysis(self, sentence,depExtra):
+        govIndex = depExtra.gov_index
+        depIndex = depExtra.dep_index
+        relation = depExtra.relation
+        ruleID = depExtra.rule_id
+       
+        govNode = self.doc.token[govIndex]
+        depNode = self.doc.token[depIndex]
+        govNodePos = govNode.pos
+        depNodePos = depNode.pos
+        govNodeWord = govNode.word
+        depNodeWord = depNode.word
+        sentenceTagged = self.tag_tokens_in_sentence(sentence,govNode,depNode)
+        return ruleID+"\t"+govNodePos+"\t"+depNodePos+"\t"+govNodeWord+"\t"+depNodeWord+"\t"+relation+"\t"+sentenceTagged
+
+    
+    def printConstituent(self, sentence, constituentIndex):
+        constituent = sentence.constituent[constituentIndex]
+        label = constituent.label
+        childrens = constituent.children
+        #returnStr = "( " + label  
+        if not childrens:
+            returnStr = " " + label
+            #returnStr = returnStr + " )" 
+            return returnStr    
+        else:
+            returnStr = "( " + label
+            for children in childrens:
+                returnStr = returnStr + self.printConstituent(sentence,children)
+            returnStr = returnStr + " )" 
+            return returnStr    
+
     def token(self, proto_obj):
         return self.doc.token[proto_obj.token_start:proto_obj.token_end + 1]
 
@@ -227,6 +332,39 @@ class DocHelper(object):
             'relations': relations
         }
 
+    def dependencpy_extra_for_brat(self, sentence):
+        count = 1
+        entities = []
+        sent_text = self.text(sentence)
+        index2tid = {}
+        for token in self.token(sentence):
+            tid = 'T' + str(count)
+            char_start, char_end = self.char_range_in_sentence(token, sentence)
+            pos = token.pos
+            entities.append([tid, pos, [[char_start, char_end + 1]]])
+            index2tid[token.index] = tid
+            count += 1
+
+        count = 1
+        relations = []
+        for dep_relation in sentence.dependency_extra:
+            rid = 'R' + str(count)
+            dep = dep_relation.dep_index
+            gov = dep_relation.gov_index
+            relation = dep_relation.relation
+
+            dep_tid = index2tid[dep]
+            gov_tid = index2tid[gov]
+            relations.append([rid, relation, [['Governer', gov_tid],
+                                              ['Dependent', dep_tid]]])
+            count += 1
+
+        return {
+            'text': sent_text,
+            'entities': entities,
+            'relations': relations
+        }
+
     @staticmethod
     def has_conjunction(sentence, constituent):
         for child in constituent.children:
@@ -381,6 +519,24 @@ class DocHelper(object):
 
         return sorted(base_phrase, key=lambda a: a.char_start)
 
+    def tag_tokens_in_sentence(self, sentence, token1, token2):
+        text = self.text(sentence)
+        slices = []
+        entities = list()
+        entities.append(token1)
+        entities.append(token2)
+        start = 0
+        for entity in sorted(entities, key=lambda a: a.char_start):
+            char_start, char_end = self.char_range_in_sentence(entity, sentence)
+            slices.append(text[start:char_start])
+            slices.append("[")
+            slices.append(text[char_start:char_end+1])
+            slices.append("]")
+            start = char_end+1
+
+        slices.append(text[start:])
+        return ''.join(slices)
+    
     def tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
             return '</{0}>'.format(mapping.entity_type_to_str[entity.entity_type])
