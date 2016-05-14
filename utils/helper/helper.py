@@ -23,15 +23,14 @@ class DocHelper(object):
     def char_range_in_sentence(self, proto_obj, sentence):
         sent_char_start, _ = self.char_range(sentence)
         return proto_obj.char_start - sent_char_start, \
-               proto_obj.char_end - sent_char_start
+            proto_obj.char_end - sent_char_start
 
     def text(self, proto_obj):
         char_start, char_end = -1, -1
-        if type(proto_obj) == document_pb2.Sentence:
+        if type(proto_obj) == document_pb2.Sentence or \
+                type(proto_obj) == document_pb2.Sentence.Constituent:
             char_start, char_end = self.char_range(proto_obj)
         elif type(proto_obj) == document_pb2.Entity:
-            char_start, char_end = proto_obj.char_start, proto_obj.char_end
-        elif type(proto_obj) == document_pb2.Sentence.Constituent:
             char_start, char_end = proto_obj.char_start, proto_obj.char_end
 
         return self.doc.text[char_start: char_end + 1]
@@ -102,7 +101,7 @@ class DocHelper(object):
         if len(tokens) > 1:
             for token in tokens:
                 heads = graph.get_gov(token.index)
-                #if len(heads) > 0:
+                # if len(heads) > 0:
                 #    head = token
                 for gov in heads:
                     if gov in tokens:
@@ -138,6 +137,20 @@ class DocHelper(object):
             if entity.char_start <= char_offset <= entity.char_end:
                 entities.append(entity)
         return entities
+
+    def entity_equiv(self, entity):
+        entity_id = entity.duid
+        equivs = set()
+        for relation_id, relation in self.doc.relation.items():
+            if relation.relation_type != 'Equiv':
+                continue
+            arg_entity_id = [arg.entity_duid for arg in relation.argument]
+            if entity_id in arg_entity_id:
+                arg_entity_id.remove(entity_id)
+                equivs |= set(arg_entity_id)
+        equiv_entities = [e for e in self.doc.entity.values() if
+                          e.duid in equivs]
+        return equiv_entities
 
     def add_entity(self, duid=None):
         if duid is None:
@@ -192,8 +205,8 @@ class DocHelper(object):
 
     def fill_all_entity_using_char_offset(self):
         for entity_id, entity in self.doc.entity.items():
-            self.fill_entity_using_char_offset(entity)                
-            
+            self.fill_entity_using_char_offset(entity)
+
     def dependencpy_for_brat(self, sentence):
         count = 1
         entities = []
@@ -252,14 +265,15 @@ class DocHelper(object):
 
                 assert len(line.strip()) > 0
                 assert line[0] == 'T' or line[0] == 'E' or \
-                    line[0] == 'R' or line[0] == '*' or line[0] == 'M'
+                       line[0] == 'R' or line[0] == '*' or line[0] == 'M'
 
                 if line[0] == 'T':
                     entity_id, entity_text, entity_type, entity_start, entity_end \
                         = parser.parse_entity(line)
+                    entity_type = entity_type.lower()
                     if entity_type not in mapping.str_to_entity_type:
                         # Only consider entity types in mapping.
-                        # print('Skip entity type:', entity_type, file=sys.stderr)
+                        print('Skip entity type:', entity_type, file=sys.stderr)
                         continue
                     entity = helper.add_entity(entity_id)
                     entity.char_start = entity_start
@@ -268,7 +282,7 @@ class DocHelper(object):
 
                 elif line[0] == 'E':
                     events.append(parser.parse_event(line))
-                elif line[0] == 'R':
+                elif line[0] == 'R' or line[0] == '*':
                     relations.append(parser.parse_relation(line))
 
             for eid, etype, trigger_id, arguments, attrs in events:
@@ -289,7 +303,10 @@ class DocHelper(object):
                             attr.value = value
 
             for rid, rtype, arguments, attrs in relations:
-                relation = helper.add_relation(rtype, rid)
+                if rid.startswith('R'):
+                    relation = helper.add_relation(rtype, rid)
+                else:
+                    relation = helper.add_relation(rtype)
                 for role, arg_id in arguments:
                     arg = relation.argument.add()
                     arg.role = role
@@ -317,7 +334,7 @@ class DocHelper(object):
                     sent_start, sent_end = self.char_range(sent)
                     line = entity_line.format(sid, 'Sentence',
                                               sent_start,
-                                              sent_end+1,
+                                              sent_end + 1,
                                               self.text(sent))
                     f.write(line)
                     start_id += 1
@@ -332,7 +349,7 @@ class DocHelper(object):
                 line = entity_line.format(entity.duid,
                                           entity_type,
                                           entity.char_start,
-                                          entity.char_end+1,
+                                          entity.char_end + 1,
                                           entity_text)
                 f.write(line)
 
@@ -383,10 +400,12 @@ class DocHelper(object):
 
     def tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
-            return '</{0}>'.format(mapping.entity_type_to_str[entity.entity_type])
+            return '</{0}>'.format(
+                    mapping.entity_type_to_str[entity.entity_type])
 
         def open_tag(entity):
-            return '<{0}>'.format(mapping.entity_type_to_str[entity.entity_type])
+            return '<{0}>'.format(
+                    mapping.entity_type_to_str[entity.entity_type])
 
         text = self.text(sentence)
         slices = []
@@ -395,9 +414,9 @@ class DocHelper(object):
             char_start, char_end = self.char_range_in_sentence(entity, sentence)
             slices.append(text[start:char_start])
             slices.append(open_tag(entity))
-            slices.append(text[char_start:char_end+1])
+            slices.append(text[char_start:char_end + 1])
             slices.append(close_tag(entity))
-            start = char_end+1
+            start = char_end + 1
 
         slices.append(text[start:])
         return ''.join(slices)
@@ -410,9 +429,9 @@ class DocHelper(object):
             char_start, char_end = self.char_range_in_sentence(entity, sentence)
             # Note char_end is offset of the last character of the entity.
             open_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
-                           char_start, char_end+1, 'open')
+                           char_start, char_end + 1, 'open')
             close_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
-                            char_start, char_end+1, 'close')
+                            char_start, char_end + 1, 'close')
             return open_tag, close_tag
 
         def compare_tag(tag_1, tag_2):
@@ -438,7 +457,7 @@ class DocHelper(object):
                 return tag_1.end - tag_2.start
             else:
                 raise ValueError('Unknown smart tagging error.')
-                    
+
         text = self.text(sentence)
         tags = []
 
@@ -461,13 +480,15 @@ class DocHelper(object):
                 start = tag.start
             else:
                 if len(open_tags) == 0:
-                    raise ValueError('Unmatched ppen and close tag:', '_EMPTY_', tag.tag)
+                    raise ValueError('Unmatched ppen and close tag:', '_EMPTY_',
+                                     tag.tag)
                 open_tag = open_tags.pop()
                 if open_tag.tag != tag.tag:
-                    raise ValueError('Unmatched ppen and close tag:', open_tag.tag, tag.tag)
+                    raise ValueError('Unmatched ppen and close tag:',
+                                     open_tag.tag, tag.tag)
                 slices.append(text[start:tag.end])
                 slices.append('</{0}>'.format(tag.tag))
-                start = tag.end                
+                start = tag.end
 
         if len(open_tags) > 0:
             raise ValueError('Non-empty open tags at the end')
@@ -498,24 +519,25 @@ class DocHelper(object):
         # Sort by char start.
         entities = masked.entity.values()
         entities = sorted(entities, key=lambda a: a.char_start)
-            
+
         for entity in entities:
             slices.append(self.doc.text[start:entity.char_start])
             mask_start += len(slices[-1])
 
             if exclude_type is not None and entity.entity_type in exclude_type:
                 slices.append(self.text(entity))
-            else:                              
-                entity_type = mapping.entity_type_to_str[entity.entity_type].upper()
+            else:
+                entity_type = mapping.entity_type_to_str[
+                    entity.entity_type].upper()
                 slices.append(entity_type)
 
             entity_end = entity.char_end
             entity.char_start = mask_start
-            entity.char_end = mask_start + len(slices[-1]) - 1            
+            entity.char_end = mask_start + len(slices[-1]) - 1
 
             mask_start += len(slices[-1])
             start = entity_end + 1
-            
+
         slices.append(self.doc.text[start:])
 
         masked.text = ''.join(slices)
@@ -539,6 +561,11 @@ class RangeHelper(object):
                                    (entity2.char_start, entity2.char_end))
 
     @staticmethod
+    def token_range_overlap(entity1, entity2):
+        return RangeHelper.overlap((entity1.token_start, entity1.token_end),
+                                   (entity2.token_start, entity2.token_end))
+    
+    @staticmethod
     def include(outer_range, inner_range):
         return outer_range[0] <= inner_range[0] and \
                outer_range[1] >= inner_range[1]
@@ -550,3 +577,9 @@ class RangeHelper(object):
                                    (inner_entity.char_start,
                                     inner_entity.char_end))
 
+    @staticmethod
+    def token_range_include(outer_entity, inner_entity):
+        return RangeHelper.include((outer_entity.token_start,
+                                    outer_entity.token_end),
+                                   (inner_entity.token_start,
+                                    inner_entity.token_end))
