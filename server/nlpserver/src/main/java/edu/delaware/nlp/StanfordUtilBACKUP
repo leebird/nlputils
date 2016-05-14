@@ -1,29 +1,27 @@
 package edu.delaware.nlp;
 
-import edu.stanford.nlp.ling.*;
+import edu.delaware.nlp.DocumentProto;
+import edu.delaware.nlp.BllipUtil;
+
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.trees.CollinsHeadFinder;
-import edu.stanford.nlp.trees.GrammaticalRelation;
-import edu.stanford.nlp.trees.UniversalEnglishGrammaticalRelations;
 import edu.stanford.nlp.trees.UniversalEnglishGrammaticalStructure;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
-import edu.stanford.nlp.process.Morphology;
-import edu.stanford.nlp.trees.TreeLemmatizer;
-import edu.stanford.nlp.international.Language;
 
 //import java.util.*;
 import java.util.List;
@@ -41,25 +39,22 @@ import java.util.logging.Logger;
 
 public class StanfordUtil {
     private static final Logger logger = Logger.getLogger(StanfordUtil.class.getName());
-    private final String parseAnnotators;
-    private final String splitAnnotators;
+    private final String annotators;
     private final int maxParseSeconds;
-    private StanfordCoreNLP parsePipeline;
-    private StanfordCoreNLP splitPipeline;
+    private StanfordCoreNLP pipeline;
     private CollinsHeadFinder headFinder;
 
-    public StanfordUtil(int maxParseSeconds) {
-        this.parseAnnotators = "tokenize, ssplit, pos, lemma, parse";
-        this.splitAnnotators = "tokenize, ssplit, pos, lemma";
+    public StanfordUtil(String annotators, int maxParseSeconds) {
+        this.annotators = annotators;
         this.maxParseSeconds = maxParseSeconds;
         loadPipeline();
     }
 
-//    public StanfordUtil(String annotators) {
-//        this.annotators = annotators;
-//        this.maxParseSeconds = 0;
-//        loadPipeline();
-//    }
+    public StanfordUtil(String annotators) {
+        this.annotators = annotators;
+        this.maxParseSeconds = 0;
+        loadPipeline();
+    }
 
     private void loadPipeline() {
         // Initialize StanfordNLP pipeline.
@@ -69,14 +64,8 @@ public class StanfordUtil {
         if (maxParseSeconds > 0) {
             props.setProperty("parse.maxtime", Integer.toString(maxParseSeconds * 1000));
         }
-        props.setProperty("annotators", parseAnnotators);
-        props.setProperty("parse.originalDependencies", "true");
-        parsePipeline = new StanfordCoreNLP(props);
-
-        props = new Properties();
-        props.setProperty("annotators", splitAnnotators);
-        splitPipeline = new StanfordCoreNLP(props);
-
+        props.setProperty("annotators", annotators);
+        pipeline = new StanfordCoreNLP(props);
         headFinder = new CollinsHeadFinder();
     }
 
@@ -84,7 +73,7 @@ public class StanfordUtil {
         // create an empty Annotation just with the given text
         Annotation document = new Annotation(text);
         // run all Annotators on this text
-        splitPipeline.annotate(document);
+        pipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
@@ -107,8 +96,6 @@ public class StanfordUtil {
     
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
     
-        TreeLemmatizer treeLemmatizer = new TreeLemmatizer();
-
         int tokenIndex = 0;
         int sentIndex = 0;
         int charIndex = 0;
@@ -128,15 +115,13 @@ public class StanfordUtil {
                 // will be updated properly, except tokenIndex, sentIndex will
                 // skip the current sentence. Seems OK but may need to find a
                 // better way to handle the missing parses.
-                logger.warning("Sentence parse error: " + protoDoc.getDocId() + ", sentence " + i);
+        logger.warning("Sentence parse error: " + protoDoc.getDocId() + ", sentence " + i);
                 continue;
             }
 
             // this is the parse tree of the current sentence
             // obtained from Charniak Bllip parser.
             Tree tree = Tree.valueOf(parse);
-            // Lemmatize the tree from BLLIP parser.
-            tree = treeLemmatizer.transformTree(tree);
             List<Tree> leaves = tree.getLeaves();
 
             // traversing the words in the current sentence
@@ -159,7 +144,6 @@ public class StanfordUtil {
                 String word = leaf.label().value();
                 String pos = preTerminal.label().value();
                 String unescaped = BllipUtil.unescape(word);
-                String lemma = ((HasLemma) leaf.label()).lemma();
                 int wordCharStart = text.indexOf(unescaped, currIndex);
 
                 assert wordCharStart >= 0 : sentence_text;
@@ -173,9 +157,7 @@ public class StanfordUtil {
                 DocumentProto.Token.Builder tbuilder = DocumentProto.Token.newBuilder();
                 tbuilder.setWord(unescaped);
                 tbuilder.setPos(pos);
-                // Add lemma for bllip parser token.
-                // tbuilder.setLemma(morph.lemma(unescaped, pos));
-                tbuilder.setLemma(lemma);
+                // TODO: add lemma for bllip parser results.
                 // tbuilder.setLemma(token.lemma());
                 tbuilder.setCharStart(wordCharStart);
                 tbuilder.setCharEnd(wordCharEnd);
@@ -204,7 +186,7 @@ public class StanfordUtil {
             sentIndex++;
 
 
-            buildConstituent(sbuilder, tree, indexMap);
+            buildConstituent(sbuilder, tree);
 
             // this is the Stanford dependency graph of the current sentence
             // Generated from Billip parser.
@@ -217,7 +199,7 @@ public class StanfordUtil {
                 List <DocumentProto.Action> actions = rule.getActionsList();
                 SemgrexPattern pat = SemgrexPattern.compile(ruleRegex);
                 SemgrexMatcher mat = pat.matcher(dependencies);
-                buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap, dependencies);
+                buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap);
             }
 
             buildDependency(sbuilder, dependencies, indexMap);
@@ -235,7 +217,7 @@ public class StanfordUtil {
         Annotation document = new Annotation(text);
 
         // run all Annotators on this text
-        parsePipeline.annotate(document);
+        pipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
@@ -280,7 +262,7 @@ public class StanfordUtil {
 
             // this is the parse tree of the current sentence
             Tree tree = sentence.get(TreeAnnotation.class);
-            buildConstituent(sbuilder, tree, indexMap);
+            buildConstituent(sbuilder, tree);
 
             // this is the Stanford dependency graph of the current sentence
             SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
@@ -299,7 +281,7 @@ public class StanfordUtil {
         Annotation document = new Annotation(text);
 
         // run all Annotators on this text
-        splitPipeline.annotate(document);
+        pipeline.annotate(document);
 
         // these are all the sentences in this document
         // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
@@ -311,7 +293,7 @@ public class StanfordUtil {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
             int sentenceBoundary = -1;
-            // HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
+            HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
 
             for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
@@ -332,7 +314,7 @@ public class StanfordUtil {
                 tbuilder.setCharEnd(token.endPosition() - 1);
                 tbuilder.setIndex(tokenIndex);
                 dbuilder.addToken(tbuilder);
-                // indexMap.put(token.index(), tokenIndex);
+                indexMap.put(token.index(), tokenIndex);
                 sentenceBoundary = tokenIndex;
                 tokenIndex++;
             }
@@ -351,11 +333,8 @@ public class StanfordUtil {
                                       SemgrexMatcher mat,
                                       List <DocumentProto.Action> actions,
                                       String ruleID,
-                                      HashMap<Integer, Integer> indexMap,
-                                      SemanticGraph dependencies) {
-        LinkedList<SemanticGraphEdge> newEdges = new LinkedList<SemanticGraphEdge>();
+                                      HashMap<Integer, Integer> indexMap) {
         while (mat.find()) {
-                ///////////////////////////////////////
             for (DocumentProto.Action action : actions) {
                 String govNodeName = action.getGovNode();
                 String depNodeName = action.getDepNode();
@@ -377,23 +356,13 @@ public class StanfordUtil {
                     depExBuilder.setRelation(edgeLabel);
                     depExBuilder.setRuleId(ruleID);
 
-                    //Store the new edges to a list
-                    SemanticGraphEdge newEdge = new SemanticGraphEdge(govNode,depNode,GrammaticalRelation.valueOf(Language.English,edgeLabel ), Double.NEGATIVE_INFINITY, false);
-                    newEdges.add(newEdge);    
-                    //Changing the dependencies in while(mat.find()) sometimes throws an exception
-                    //dependencies.addEdge(govNode,depNode,GrammaticalRelation.valueOf(Language.English,edgeLabel ), Double.NEGATIVE_INFINITY, false);
-                    
                     sbuilder.addDependencyExtra(depExBuilder);
                     //System.out.println("Samir :" + ruleId + ruleRegex);
                     //System.out.println(govNode.toString() + ">" + edgeLabel + ">" + depNode.toString());
                 }
             }    
+            //System.out.println();
         }
-        //After the rules have been applied add the new edges to the semantic graph (old one)
-        for(SemanticGraphEdge newEdge: newEdges) {
-            dependencies.addEdge(newEdge);
-        }
-        
     }
     private void buildDependency(DocumentProto.Sentence.Builder sbuilder,
                                  SemanticGraph dependencies,
@@ -408,6 +377,7 @@ public class StanfordUtil {
             depBuilder.setRelation("root");
             sbuilder.addDependency(depBuilder);
         }
+        HashMap<Integer, TreeSet<Integer>> childrenMap = new HashMap<Integer, TreeSet<Integer>>();
 
         // This only gets basic dependencies.
         // Collection<TypedDependency> typedDeps = dependencies.typedDependencies();
@@ -435,9 +405,7 @@ public class StanfordUtil {
         }
     }
 
-    private void buildConstituent(DocumentProto.Sentence.Builder sbuilder,
-                                  Tree tree,
-                                  HashMap<Integer, Integer> indexMap) {
+    private void buildConstituent(DocumentProto.Sentence.Builder sbuilder, Tree tree) {
         Tree nextTree = tree;
         Queue<Tree> treeQueue = new LinkedList<Tree>();
         Queue<Integer> parentQueue = new LinkedList<Integer>();
@@ -449,46 +417,30 @@ public class StanfordUtil {
             Tree head = nextTree.headTerminal(headFinder);
             List<Tree> headLeaves = head.getLeaves();
             assert headLeaves.size() == 1;
-            Tree onlyLeaf = headLeaves.get(0);
-            CoreLabel headToken = (CoreLabel) onlyLeaf.label();
+            Tree only_leaf = headLeaves.get(0);
 
             // Get char start and end for the head token.
-            int headStart = ((HasOffset) onlyLeaf.label()).beginPosition();
+            int head_start = ((HasOffset) only_leaf.label()).beginPosition();
             // It looks the end position is the last char index + 1.
-            int headEnd = ((HasOffset) onlyLeaf.label()).endPosition() - 1;
-            // Get head token index.
-            int headIndex = indexMap.get(headToken.index());
+            int head_end = ((HasOffset) only_leaf.label()).endPosition() - 1;
 
             // Get char start and end for the phrase.
             List<Tree> treeLeaves = nextTree.getLeaves();
-            Tree firstLeaf = treeLeaves.get(0);
-            Tree lastLeaf = treeLeaves.get(treeLeaves.size() - 1);
-            int phraseStart = ((HasOffset) firstLeaf.label()).beginPosition();
+            Tree first_leaf = treeLeaves.get(0);
+            Tree last_leaf = treeLeaves.get(treeLeaves.size() - 1);
+            int phrase_start = ((HasOffset) first_leaf.label()).beginPosition();
             // It looks the end position is the last char index + 1.
-            int phraseEnd = ((HasOffset) lastLeaf.label()).endPosition() - 1;
+            int phrase_end = ((HasOffset) last_leaf.label()).endPosition() - 1;
 
-            CoreLabel firstToken = (CoreLabel) firstLeaf.label();
-            CoreLabel lastToken = (CoreLabel) lastLeaf.label();
-
-            int firstTokenIndex = indexMap.get(firstToken.index());
-            int lastTokenIndex = indexMap.get(lastToken.index());
-
-            assert phraseEnd >= phraseStart;
-            assert phraseStart >= 0;
+            assert phrase_end >= phrase_start;
+            assert phrase_start >= 0;
 
             DocumentProto.Sentence.Constituent.Builder cbuilder = DocumentProto.Sentence.Constituent.newBuilder();
             cbuilder.setLabel(nextTree.label().value());
-
-            // Don't use character offset.
-            // cbuilder.setCharStart(phrase_start);
-            // cbuilder.setCharEnd(phrase_end);
-            // cbuilder.setHeadCharStart(head_start);
-            // cbuilder.setHeadCharEnd(head_end);
-
-            cbuilder.setTokenStart(firstTokenIndex);
-            cbuilder.setTokenEnd(lastTokenIndex);
-            cbuilder.setHeadTokenIndex(headIndex);
-
+            cbuilder.setCharStart(phrase_start);
+            cbuilder.setCharEnd(phrase_end);
+            cbuilder.setHeadCharStart(head_start);
+            cbuilder.setHeadCharEnd(head_end);
             cbuilder.setIndex(treeIndex);
             cbuilder.setParent(parentIndex);
             // Add children index to its parent.
