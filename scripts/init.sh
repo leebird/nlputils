@@ -5,10 +5,10 @@ set -e
 
 # Set version tags. Please check the corresponding git repo
 # for correct tags.
-PROTOBUF_VERSION="v3.0.0-beta-2"
+PROTOBUF_VERSION="v3.0.0-beta-3"
 # 02/12/2016 Currently grpc has compile error using protobuf v3 beta 2.
-GRPC_VERSION="release-0_13_0"
-GRPC_JAVA_VERSION="v0.13.1"
+GRPC_VERSION="release-0_15_0"
+GRPC_JAVA_VERSION="v0.15.0"
 
 # Set folder.
 SCRIPT_CWD=$PWD
@@ -63,8 +63,15 @@ make
 pip install -U pip
 
 # Protobuf Python module.
+# Use the C++ backend for serialization. Pure
+# python serialization is very slow.
+# export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
+# before running your python application to use
+# the C++ backend.
 cd ${CWD}/dep/protobuf/python
-python setup.py install
+python setup.py build --cpp_implementation
+python setup.py test --cpp_implementation
+python setup.py install --cpp_implementation
 
 # Grpc python library.
 # We don't install from the codes since it lacks setup.py.
