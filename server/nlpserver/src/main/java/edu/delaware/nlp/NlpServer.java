@@ -102,6 +102,7 @@ public class NlpServer {
             this.bllipParserPort = bllipParserPort;
             // Load stanford util.
             sdutil = new StanfordUtil(maxParseSeconds);
+	    client = new BllipClient(bllipParserHost, bllipParserPort);
         }
 
         public void processDocument(RpcProto.Request request, StreamObserver<RpcProto.Response> responseObserver) {
@@ -115,7 +116,6 @@ public class NlpServer {
                     } else if (requestType == RpcProto.Request.RequestType.PARSE_STANFORD) {
                         rbuilder.addDocument(sdutil.parseUsingStanford(doc));
                     } else if (requestType == RpcProto.Request.RequestType.PARSE_BLLIP) {
-                        client = new BllipClient(bllipParserHost, bllipParserPort);
                         Map<String, String> sentences = sdutil.splitSentence(doc.getText());
                         Map<String, String> parses = client.parse(sentences);
                         DocumentProto.Document postDoc = sdutil.parseUsingBllip(doc, sentences, parses);
