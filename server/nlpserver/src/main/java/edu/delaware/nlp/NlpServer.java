@@ -136,5 +136,40 @@ public class NlpServer {
             responseObserver.onNext(rbuilder.build());
             responseObserver.onCompleted();
         }
+        
+        public void edgProcessDocument(RpcProto.EdgRequest request, StreamObserver<RpcProto.Response> responseObserver) {
+            RpcProto.Response.Builder rbuilder = RpcProto.Response.newBuilder();
+            rbuilder.setSuccess(true);
+            RpcProto.EdgRequest.RequestType requestType = request.getRequestType();
+            EdgRulesProto.EdgRules rules = request.getEdgRules();
+			
+            for (DocumentProto.Document doc : request.getDocumentList()) {
+                try {
+                    if (requestType == RpcProto.EdgRequest.RequestType.SPLIT) {
+                        rbuilder.addDocument(sdutil.splitSentence(doc));
+                    } else if (requestType == RpcProto.EdgRequest.RequestType.PARSE_STANFORD) {
+                        rbuilder.addDocument(sdutil.parseUsingStanford(doc));
+                    } else if (requestType == RpcProto.EdgRequest.RequestType.PARSE_BLLIP) {
+                        client = new BllipClient(bllipParserHost, bllipParserPort);
+                        Map<String, String> sentences = sdutil.splitSentence(doc.getText());
+                        Map<String, String> parses = client.parse(sentences);
+                        DocumentProto.Document postDoc = sdutil.parseUsingBllipEDG(doc, sentences, parses,rules);
+                        rbuilder.addDocument(postDoc);
+                    }
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                    // rbuilder.addAllDocument(request.getDocumentList());
+                    // rbuilder.setSuccess(false);
+                    // If timeouts, add the original document.
+                    // Clear tokens and sentences which may contain incomplete results.
+                    DocumentProto.Document.Builder dbuilder = doc.toBuilder();
+                    dbuilder.clearToken();
+                    dbuilder.clearSentence();
+                    rbuilder.addDocument(dbuilder);
+                }
+            }
+            responseObserver.onNext(rbuilder.build());
+            responseObserver.onCompleted();
+        }
     }
 }
