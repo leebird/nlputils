@@ -11,6 +11,7 @@
 - First create a python virtual enviroment: `virtualenv --python=python2 env`. _Note that the virtual enviroment can be placed anywhere, not necessarily under nlputils. If you just want to use nlputils as a module, maybe you want to create the virtual environment in the parent folder of nlputils._
 - Activate the virtual enviroment: `. env/bin/activate` for bash or `source env/bin/activate.csh` for tcsh
 - `cd scripts`
+- `sh clear_init.sh`
 - Set up environment path variables: `. export_path.sh` for bash or `source tcsh_export_path.sh` for tcsh
 - Run the initialization script: `sh init.sh`
 - Compile document.proto to generate python codes: `sh compile_document_proto.sh`
