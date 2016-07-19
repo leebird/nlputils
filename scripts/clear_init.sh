@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Set base folder.
 SCRIPT_CWD=$PWD
