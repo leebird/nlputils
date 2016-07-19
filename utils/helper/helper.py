@@ -75,6 +75,8 @@ class DocHelper(object):
             cLabel = sentence.constituent[child].label
             if cLabel == "CC":
                 return 1
+            if cLabel == ",":
+                return 1
         return 0    
 
     def getParentNPIndexFromLeafTokenIndex1(self,sentence,index):
