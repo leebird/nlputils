@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "document.proto";
+import "edgRules.proto";
 
 package udelnlp;
 
@@ -33,6 +34,17 @@ message Request {
 	repeated Document document = 2;
 }
 
+message EdgRequest {
+	enum RequestType {
+		SPLIT = 0;
+		PARSE_STANFORD = 1;
+		PARSE_BLLIP = 2;
+	}
+	RequestType request_type = 1;
+	repeated Document document = 2;
+	EdgRules edg_rules = 3;
+}
+
 message Response {
 	bool success = 1;
 	repeated Document document = 2;
@@ -40,4 +52,5 @@ message Response {
 
 service NlpService {
 	rpc ProcessDocument (Request) returns (Response) {}
+	rpc EdgProcessDocument (EdgRequest) returns (Response) {}
 }
