@@ -477,14 +477,19 @@ class DocHelper(object):
                     f.write(line)
                     start_id += 1
 
+            # start_id = 1
             for entity_id, entity in self.doc.entity.items():
                 if entity.entity_type not in mapping.entity_type_to_str:
                     print('Skip entity not in mapping', entity.entity_type,
                           file=sys.stderr)
                     continue
+                # Note that the entity id may not be of brat format, e.g., T1.
+                # sid = 'T' + str(start_id)
+                # start_id += 1
                 entity_type = mapping.entity_type_to_str[entity.entity_type]
                 entity_text = self.text(entity)
                 line = entity_line.format(entity.duid,
+                                          # sid,
                                           entity_type,
                                           entity.char_start,
                                           entity.char_end + 1,
@@ -554,7 +559,7 @@ class DocHelper(object):
         slices.append(text[start:])
         return ''.join(slices)
     
-    def tag_entity_in_sentence(self, sentence, entities):
+    def naive_tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
             return '</{0}>'.format(
                     mapping.entity_type_to_str[entity.entity_type])
@@ -590,6 +595,40 @@ class DocHelper(object):
                             char_start, char_end + 1, 'close')
             return open_tag, close_tag
 
+        text = self.text(sentence)
+        tags = []
+
+        # Get tags with start and end char-level offset.
+        for entity in entities:
+            open_tag, close_tag = get_tag(entity, sentence)
+            tags.append(open_tag)
+            tags.append(close_tag)
+
+        return self.tag_tags_in_text(text, tags)
+
+    def smart_tag_entity_in_text(self, text, entities):
+        # Attributes start and end are offsets of the entity, not the tag's position.
+        Tag = namedtuple('Tag', ['tag', 'start', 'end', 'type'])
+
+        def get_tag(entity):
+            # Note char_end is offset of the last character of the entity.
+            open_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+                           entity.char_start, entity.char_end + 1, 'open')
+            close_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+                            entity.char_start, entity.char_end + 1, 'close')
+            return open_tag, close_tag
+
+        tags = []
+
+        # Get tags with start and end char-level offset.
+        for entity in entities:
+            open_tag, close_tag = get_tag(entity)
+            tags.append(open_tag)
+            tags.append(close_tag)
+
+        return self.tag_tags_in_text(text, tags)
+
+    def tag_tags_in_text(self, text, tags):
         def compare_tag(tag_1, tag_2):
             if tag_1.type == tag_2.type:
                 if tag_1.type == 'open':
@@ -614,17 +653,7 @@ class DocHelper(object):
             else:
                 raise ValueError('Unknown smart tagging error.')
 
-        text = self.text(sentence)
-        tags = []
-
-        # Get tags with start and end char-level offset.
-        for entity in entities:
-            open_tag, close_tag = get_tag(entity, sentence)
-            tags.append(open_tag)
-            tags.append(close_tag)
-
         tags = sorted(tags, cmp=compare_tag)
-
         start = 0
         open_tags = []
         slices = []
@@ -651,6 +680,15 @@ class DocHelper(object):
 
         slices.append(text[start:])
         return ''.join(slices)
+
+
+    def tag_entity_in_sentence(self, sentence, entities):
+        try:
+            tagged = self.smart_tag_entity_in_sentence(sentence, entities)
+        except Exception:
+            tagged = self.naive_tag_entity_in_sentence(sentence, entities)
+
+        return tagged
 
     def has_overlap_entity(self):
         for entity_id_1, entity_1 in self.doc.entity.items():

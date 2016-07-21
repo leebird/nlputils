@@ -16,14 +16,16 @@ class GrpcInterface(object):
         self.thread_pool_size = thread_pool_size
         self.host = host
         self.channel = implementations.insecure_channel(self.host, self.port)
-        self.stub = rpc_pb2.beta_create_NlpService_stub(self.channel,
-                                                             pool_size=self.thread_pool_size)
+        self.stub = rpc_pb2.beta_create_NlpService_stub(
+                self.channel,
+                pool_size=self.thread_pool_size)
         
     def process_document(self, request):
         try:
             return self.stub.ProcessDocument(request, self.timeout_seconds)
         except ExpirationError:
-            logging.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
+            msg = 'Expiration:' + ','.join([d.doc_id for d in request.document])
+            logging.warning(msg)
             return rpc_pb2.Response()
 
 
@@ -42,7 +44,7 @@ def _request_processor(interface, inqueue, dequeue):
 def _serialize(iterable, inqueue, writer_num):
     for i in iterable:
         inqueue.put(i.SerializeToString())
-    for _ in xrange(writer_num):
+    for _ in range(writer_num):
         inqueue.put(None)
     print('Input read done')
 
@@ -58,24 +60,28 @@ def get_queue(host, request_thread_num, iterable_request):
     thread.start()
 
     print('Start', request_thread_num, 'request processor threads')
-    for i in xrange(request_thread_num):
+    for i in range(request_thread_num):
         thread = threading.Thread(target=_request_processor, args=(interface, inqueue, dequeue))
         thread.start()
 
     print('Read from output queue...')
     exited_thread = 0
-    while True:
-        bytes = dequeue.get()
-        if bytes is None:
-            exited_thread += 1
-            if exited_thread == request_thread_num:
-                break
-            continue
-        response = rpc_pb2.Response()
-        response.ParseFromString(bytes)
-        yield response        
+    try:
+        while True:
+            bytes = dequeue.get()
+            if bytes is None:
+                exited_thread += 1
+                if exited_thread == request_thread_num:
+                    break
+                continue
+            response = rpc_pb2.Response()
+            response.ParseFromString(bytes)
+            yield response
+    except KeyboardInterrupt:
+        for _ in range(request_thread_num):
+            inqueue.put(None)
+        return
 
-    
     # Note that using mp.Pool is problematic since we can only share interface
     # among threads but not processes.
 
@@ -117,7 +123,7 @@ def _serialize_masked(iterable, inqueue, writer_num):
     for request, masked_request in iterable:
         inqueue.put((request.SerializeToString(),
                      masked_request.SerializeToString()))
-    for _ in xrange(writer_num):
+    for _ in range(writer_num):
         inqueue.put(None)
     print('Input read done.')
 
@@ -134,7 +140,7 @@ def get_queue_masked(host, request_thread_num, iterable_request):
     thread.start()
 
     print('Start', request_thread_num, 'request processor threads')
-    for i in xrange(request_thread_num):
+    for i in range(request_thread_num):
         thread = threading.Thread(target=_request_processor_masked,
                                   args=(interface, inqueue, dequeue))
         thread.start()
