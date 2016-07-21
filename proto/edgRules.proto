@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package udelnlp;
+
+option java_package = "edu.delaware.nlp";
+option java_outer_classname = "EdgRulesProto";
+
+message Action {
+	string gov_node = 1;
+	string dep_node = 2;
+	string edge_label = 3;
+}
+
+message Rule {
+	string ident = 1;
+	string regex = 2;
+	repeated Action actions = 3;
+	enum RulePhase {
+		PHASE_0 = 0;
+		PHASE_1 = 1;
+		PHASE_2 = 2;
+	}
+	RulePhase rule_phase = 4;
+}
+
+message EdgRules {
+	repeated Rule rules = 1;
+}
+

@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import ExpirationError
-from protolib.python import document_pb2, rpc_pb2
+from protolib.python import document_pb2, rpc_pb2, edgRules_pb2
 import multiprocessing as mp
 import threading
 import logging
@@ -26,6 +26,13 @@ class GrpcInterface(object):
         except ExpirationError:
             msg = 'Expiration:' + ','.join([d.doc_id for d in request.document])
             logging.warning(msg)
+            return rpc_pb2.Response()
+
+    def edg_process_document(self, request):
+        try:
+            return self.stub.EdgProcessDocument(request, self.timeout_seconds)
+        except ExpirationError:
+            logging.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
             return rpc_pb2.Response()
 
 
