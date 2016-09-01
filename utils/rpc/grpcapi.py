@@ -1,11 +1,11 @@
 from __future__ import unicode_literals, print_function
 
+import multiprocessing as mp
+import threading
+import glog
 from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import ExpirationError
 from protolib.python import document_pb2, rpc_pb2, edgRules_pb2
-import multiprocessing as mp
-import threading
-import logging
 
 
 class GrpcInterface(object):
@@ -25,14 +25,14 @@ class GrpcInterface(object):
             return self.stub.ProcessDocument(request, self.timeout_seconds)
         except ExpirationError:
             msg = 'Expiration:' + ','.join([d.doc_id for d in request.document])
-            logging.warning(msg)
+            glog.warning(msg)
             return rpc_pb2.Response()
 
     def edg_process_document(self, request):
         try:
             return self.stub.EdgProcessDocument(request, self.timeout_seconds)
         except ExpirationError:
-            logging.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
+            glog.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
             return rpc_pb2.Response()
 
 
@@ -56,8 +56,8 @@ def _serialize(iterable, inqueue, writer_num):
     print('Input read done')
 
 
-def get_queue(host, request_thread_num, iterable_request):
-    interface = GrpcInterface(host)
+def get_queue(server, port, request_thread_num, iterable_request):
+    interface = GrpcInterface(server, port)
     manager = mp.Manager()
     inqueue = manager.Queue(request_thread_num * 4)
     dequeue = manager.Queue(request_thread_num)
