@@ -10,17 +10,6 @@ from utils.rpc.iterator import request_iter_docs
 from utils.rpc import grpcapi
 
 
-# Given a request iterator, send requests in parallel and return response.
-def get_response(request_iter, server_ip='128.4.20.169', port=8900,
-                 thread_size=5):
-    queue = grpcapi.get_queue(server_ip, port, thread_size, request_iter)
-    try:
-        for response in queue:
-            yield response
-    except KeyboardInterrupt:
-        return
-
-
 def run():
     text = u'MicroRNAs (miRNAs) are small non-coding RNAs of ∼19-24 ' \
            'nucleotides (nt) in length and considered as potent ' \
@@ -54,10 +43,22 @@ def run():
 
     one_hundred_docs = [raw_doc] * 100
 
-    requests = request_iter_docs(one_hundred_docs, request_type=rpc_pb2.Request.PARSE_BLLIP)
-    responses = get_response(requests, thread_size=10)
-    for response in responses:
-        print(len(response.document))
+    # This is a simple function to make requests out of a list of documents. We
+    # put 5 documents in each request.
+    requests = request_iter_docs(one_hundred_docs,
+                                 request_size=5,
+                                 request_type=rpc_pb2.Request.PARSE_BLLIP)
+
+    # Given a request iterator, send requests in parallel and get responses.
+    responses_queue = grpcapi.get_queue(server='128.4.20.169',
+                                        port=8900,
+                                        request_thread_num=10,
+                                        iterable_request=requests)
+    count = 0
+    for response in responses_queue:
+        for doc in response.document:
+            count += 1
+            print(count, doc.doc_id, len(doc.sentence))
 
 
 if __name__ == '__main__':
