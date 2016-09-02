@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get path information.
-source "$(dirname $BASH_SOURCE)"/utils.sh
+source "$(dirname $BASH_SOURCE)"/common_path.sh
 
 # Compile-time C headers path.
 CPATH=${DEPENDENCY_PATH}/grpc/include:${DEPENDENCY_PATH}/protobuf/src:$CPATH

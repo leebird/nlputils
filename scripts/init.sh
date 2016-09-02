@@ -4,7 +4,7 @@
 set -e
 
 # Get path information.
-source "$(dirname $BASH_SOURCE)"/utils.sh
+source "$(dirname $BASH_SOURCE)"/common_path.sh
 
 # Version numbers of the dependency libraries.
 # Check https://github.com/google/protobuf/releases for correct tag.

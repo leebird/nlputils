@@ -2,7 +2,7 @@
 
 set -e
 # Get path information.
-source "$(dirname $BASH_SOURCE)"/utils.sh
+source "$(dirname $BASH_SOURCE)"/common_path.sh
 
 # Remove dependencies.
 echo "Remove libraries in ${DEPENDENCY_PATH}"
