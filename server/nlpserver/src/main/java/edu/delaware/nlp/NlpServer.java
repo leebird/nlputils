@@ -3,8 +3,6 @@ package edu.delaware.nlp;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
-
-//import java.util.*;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.Map;
@@ -34,8 +32,7 @@ public class NlpServer {
      */
     public void start() throws IOException {
         server = NettyServerBuilder.forPort(port).maxConcurrentCallsPerConnection(maxConcurrentCalls)
-                .addService(NlpServiceGrpc.bindService(new StanfordService(maxParseSeconds,
-                        bllipParserHost, bllipParserPort)))
+                .addService(new StanfordService(maxParseSeconds, bllipParserHost, bllipParserPort))
                 .build()
                 .start();
         logger.info("Server started, listening on " + port + ", max concurrent calls: " + maxConcurrentCalls);
@@ -88,7 +85,7 @@ public class NlpServer {
         }
     }
 
-    private static class StanfordService implements NlpServiceGrpc.NlpService {
+    private static class StanfordService extends NlpServiceGrpc.NlpServiceImplBase {
         private static final Logger logger = Logger.getLogger(StanfordService.class.getName());
         private final int maxParseSeconds;
         private final String bllipParserHost;
