@@ -1,65 +1,75 @@
 #!/usr/bin/env bash
 
-# Initialization for a python client.
+# Stop if error occurs.
 set -e
 
-# Set version tags. Please check the corresponding git repo
-# for correct tags.
-PROTOBUF_VERSION="v3.0.0-beta-3"
-# 02/12/2016 Currently grpc has compile error using protobuf v3 beta 2.
-GRPC_VERSION="release-0_15_0"
-GRPC_JAVA_VERSION="v0.15.0"
+# Get path information.
+source "$(dirname $BASH_SOURCE)"/utils.sh
 
-# Set folder.
-SCRIPT_CWD=$PWD
-CWD="$(dirname ${SCRIPT_CWD})"
-echo $CWD
-rm -rf $CWD/dep
-mkdir -p $CWD/dep
+# Version numbers of the dependency libraries.
+# Check https://github.com/google/protobuf/releases for correct tag.
+PROTOBUF_VERSION="v3.0.0"
+# Check https://github.com/grpc/grpc/releases for correct tag.
+GRPC_VERSION="v1.0.0"
+# Check https://github.com/grpc/grpc-java/releases for correct tag.
+GRPC_JAVA_VERSION="v1.0.0"
 
 # Download packages from Github.
 # https://github.com/google/protobuf/releases
-cd ${CWD}/dep
+cd ${DEPENDENCY_PATH}
 git clone https://github.com/google/protobuf
 cd protobuf
 git checkout tags/${PROTOBUF_VERSION}
 
 # The C++ based grpc stack, including python and other languages.
 # https://github.com/grpc/grpc
-cd ${CWD}/dep
+cd ${DEPENDENCY_PATH}
 git clone https://github.com/grpc/grpc
 cd grpc
 git checkout tags/${GRPC_VERSION}
 git submodule update --init
 
 # Java grpc library.
-cd ${CWD}/dep
+cd ${DEPENDENCY_PATH}
 git clone https://github.com/grpc/grpc-java
 cd grpc-java
 git checkout tags/${GRPC_JAVA_VERSION}
 
 # Make protobuf.
 # Generate configuration files
-cd ${CWD}/dep/protobuf
+cd ${DEPENDENCY_PATH}/protobuf
+
+# Check that gmock is present. Usually it is already there since the directory
+# is set up as an SVN external. This is copied from the master branch of
+# protocol buffer as it's not released yet.
+if test ! -e gmock; then
+  echo "Google Mock not present.  Fetching gmock-1.7.0 from the web..."
+  curl -L -O https://github.com/google/googlemock/archive/release-1.7.0.zip
+  unzip -q release-1.7.0.zip
+  rm release-1.7.0.zip
+  mv googlemock-release-1.7.0 gmock
+
+  curl -L -O https://github.com/google/googletest/archive/release-1.7.0.zip
+  unzip -q release-1.7.0.zip
+  rm release-1.7.0.zip
+  mv googletest-release-1.7.0 gmock/gtest
+fi
+
 ./autogen.sh
 ./configure
 make
 make check
 
+# Make the java protobuf package.
 cd java
 mvn test
 mvn package
-# sudo make install
-# To delete the system-level installation
-# make uninstall
 
 # Make grpc.
-cd ${CWD}/dep/grpc
+cd ${DEPENDENCY_PATH}/grpc
 make
-#sudo make install
 
-# Install Python modules.
-# Update pip.
+# Install Python modules. First update pip.
 pip install -U pip
 
 # Protobuf Python module.
@@ -68,7 +78,7 @@ pip install -U pip
 # export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
 # before running your python application to use
 # the C++ backend.
-cd ${CWD}/dep/protobuf/python
+cd ${DEPENDENCY_PATH}/protobuf/python
 python setup.py build --cpp_implementation
 python setup.py test --cpp_implementation
 python setup.py install --cpp_implementation
@@ -77,13 +87,13 @@ python setup.py install --cpp_implementation
 # We don't install from the codes since it lacks setup.py.
 # Some instructions: https://github.com/grpc/grpc/blob/master/INSTALL
 # Not very clear.
-cd ${CWD}
+cd ${ROOT_PATH}
 pip install grpcio
 
 # Grpc java library compiler.
 # Here we only build the compiler, the libarary jar file can be downloaded
 # from maven as other dependencies.
-cd ${CWD}/dep/grpc-java/compiler
+cd ${DEPENDENCY_PATH}/grpc-java/compiler
 # To build, https://github.com/grpc/grpc-java/blob/master/COMPILING.md
 # The plugin binds the rpc stack with protobuf
 # https://github.com/grpc/grpc-java/tree/master/compiler
@@ -96,3 +106,4 @@ cd ${CWD}/dep/grpc-java/compiler
 # Other Python modules.
 pip install -U shortuuid
 pip install -U bllipparser
+pip install git+https://github.com/leebird/glog

@@ -1,19 +1,23 @@
-# Set folder.
-SCRIPT_CWD=$PWD
-CWD="$(dirname ${SCRIPT_CWD})"
+#!/usr/bin/env bash
+
+# Get path information.
+source "$(dirname $BASH_SOURCE)"/utils.sh
 
 # Compile-time C headers path.
-CPATH=${CWD}/dep/grpc/include:${CWD}/dep/protobuf/src:$CPATH
+CPATH=${DEPENDENCY_PATH}/grpc/include:${DEPENDENCY_PATH}/protobuf/src:$CPATH
 export CPATH
 
 # Link-time library path.
-LIBRARY_PATH=${CWD}/dep/protobuf/src/.libs:${CWD}/dep/grpc/libs/opt:$LIBRARY_PATH
+LIBRARY_PATH=${DEPENDENCY_PATH}/protobuf/src/.libs:${DEPENDENCY_PATH}/grpc/libs/opt:$LIBRARY_PATH
 export LIBRARY_PATH
 
 # Binary command path.
-PATH=${CWD}/dep/protobuf/src:${CWD}/dep/grpc/bins/opt:$PATH
+PATH=${DEPENDENCY_PATH}/protobuf/src:${DEPENDENCY_PATH}/grpc/bins/opt:$PATH
 export PATH
 
 # Run-time library path.
-LD_LIBRARY_PATH=${CWD}/dep/protobuf/src/.libs:${CWD}/dep/grpc/libs/opt:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=${DEPENDENCY_PATH}/protobuf/src/.libs:${DEPENDENCY_PATH}/grpc/libs/opt:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
+
+# Use cpp backend for python protocol buffer to make it much faster.
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
