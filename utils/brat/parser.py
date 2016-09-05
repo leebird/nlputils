@@ -40,7 +40,10 @@ def parse_relation(line):
 
     arguments = []
     for arg in info[1:]:
-        arg_category, arg_entity_id = arg.split(':')
+        if rid.startswith('R'):
+            arg_category, arg_entity_id = arg.split(':')
+        else:
+            arg_category, arg_entity_id = 'Entity', arg
         arguments.append((arg_category, arg_entity_id))
 
     attrs = None
