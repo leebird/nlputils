@@ -5,7 +5,7 @@ import threading
 import glog
 from grpc.beta import implementations
 from grpc.framework.interfaces.face.face import ExpirationError
-from protolib.python import document_pb2, rpc_pb2, edgRules_pb2
+from protolib.python import rpc_pb2
 
 
 class GrpcInterface(object):
@@ -53,7 +53,7 @@ def _serialize(iterable, inqueue, writer_num):
         inqueue.put(i.SerializeToString())
     for _ in range(writer_num):
         inqueue.put(None)
-    print('Input read done')
+    glog.info('Input read done')
 
 
 def get_queue(server, port, request_thread_num, iterable_request):
@@ -62,16 +62,16 @@ def get_queue(server, port, request_thread_num, iterable_request):
     inqueue = manager.Queue(request_thread_num * 4)
     dequeue = manager.Queue(request_thread_num)
 
-    print('Start input reading thread')
+    glog.info('Start input reading thread')
     thread = threading.Thread(target=_serialize, args=(iterable_request, inqueue, request_thread_num))
     thread.start()
 
-    print('Start', request_thread_num, 'request processor threads')
+    glog.info('Start {0} request processor threads'.format(request_thread_num))
     for i in range(request_thread_num):
         thread = threading.Thread(target=_request_processor, args=(interface, inqueue, dequeue))
         thread.start()
 
-    print('Read from output queue...')
+    glog.info('Read from output queue...')
     exited_thread = 0
     try:
         while True:
@@ -132,7 +132,7 @@ def _serialize_masked(iterable, inqueue, writer_num):
                      masked_request.SerializeToString()))
     for _ in range(writer_num):
         inqueue.put(None)
-    print('Input read done.')
+    glog.info('Input read done.')
 
 
 def get_queue_masked(host, request_thread_num, iterable_request):
@@ -141,18 +141,18 @@ def get_queue_masked(host, request_thread_num, iterable_request):
     inqueue = manager.Queue(request_thread_num * 4)
     dequeue = manager.Queue(request_thread_num)
 
-    print('Start input reading thread')
+    glog.info('Start input reading thread')
     thread = threading.Thread(target=_serialize_masked,
                               args=(iterable_request, inqueue, request_thread_num))
     thread.start()
 
-    print('Start', request_thread_num, 'request processor threads')
+    glog.info('Start', request_thread_num, 'request processor threads')
     for i in range(request_thread_num):
         thread = threading.Thread(target=_request_processor_masked,
                                   args=(interface, inqueue, dequeue))
         thread.start()
 
-    print('Read from output queue...')
+    glog.info('Read from output queue...')
     while True:
         bytes = dequeue.get()
         if bytes is None:

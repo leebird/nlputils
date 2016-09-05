@@ -1,20 +1,17 @@
 from __future__ import unicode_literals, print_function
 import time
-import sys
 from bllip_process_pool import BllipManager
 from protolib.python import rpc_pb2
-from utils.logging.utils import get_logger
+import glog
 
 
 class BllipServicer(rpc_pb2.BetaBllipParserServicer):
     def __init__(self):
-        self.pool_size = 15
-        self.logger = get_logger('BllipServicer')
-        self.logger.info('Waiting for BLLIP manager init...')
+        self.pool_size = 2
+        glog.info('Waiting for BLLIP manager init...')
         self.manager = BllipManager(self.pool_size)
-        self.logger.info('BLLIP manager inited')
-        self.logger.info('BLLIP parser pool size: {}'.format(self.pool_size))
-
+        glog.info('BLLIP manager inited')
+        glog.info('BLLIP parser pool size: {}'.format(self.pool_size))
 
     def Parse(self, request, context):
         response = rpc_pb2.BllipParserResponse()
@@ -23,6 +20,7 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
             if parse_tree is not None:
                 response.parse[sid] = parse_tree
         return response
+
 
 def serve():
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24

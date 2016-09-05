@@ -1,9 +1,8 @@
 from __future__ import unicode_literals, print_function
 from multiprocessing import Queue, Process, current_process
-from bllip_parser import BllipParser
 import random
-from utils.logging.utils import get_logger
-
+from bllip_parser import BllipParser
+import glog
 
 # Since BLLIP parser is not thread-safe, we use process to do parallel parsing.
 # We create a pool of BLLIP parsers, each parser is held by an indepdendent
@@ -37,11 +36,10 @@ def _bllip_parser_worker(name, input_queue, output_queue):
     # Maybe because it is a different process and the logging module is
     # not supported well across processes.
     worker_process = name + '_' + current_process().name
-    logger = get_logger(worker_process)
-    logger.info('Loading BLLIP parser...')
+    glog.info('Loading BLLIP parser...')
     parser = BllipParser()
     output_queue.put(True)
-    logger.info('BLLIP parser loaded')
+    glog.info('BLLIP parser loaded')
 
     while True:
         try:
@@ -57,23 +55,22 @@ def _bllip_parser_worker(name, input_queue, output_queue):
             parse_tree = parser.parse_one_sentence(sentence)
             output_queue.put(parse_tree)
         except (IOError, KeyboardInterrupt):
-            logger.info('BLLIP parser exits due to exception')
+            glog.info('BLLIP parser exits due to exception')
             break
 
 
 class BllipWorker(object):
     def __init__(self, name):
         self.name = name
-        self.logger = get_logger(self.name)
 
         # If there are more than 50 sentences, then block the input queue.        
         self.inqueue = Queue(50)
         # Output queue is associated with input queue.
         self.dequeue = Queue()
         # Start the corresponding worker in a new process.
-        self.logger.info('Starting BLLIP worker...')
+        glog.info('Starting BLLIP worker...')
         self.init_worker()
-        self.logger.info('BLLIP worker loaded')
+        glog.info('BLLIP worker loaded')
 
     def init_worker(self):
         self.worker = Process(target=_bllip_parser_worker, 
@@ -96,7 +93,6 @@ class BllipWorker(object):
 
 class BllipManager(object):
     def __init__(self, process_pool_size=1):
-        self.logger = get_logger(__name__)
         self.process_pool_size = process_pool_size
         self.pool = []
         self.create_parser_pool()
@@ -112,7 +108,7 @@ class BllipManager(object):
             parse = self.pool[selected_worker].parse_one_sentence(sentence)
             return parse
         except Exception as e:
-            self.logger.error(e)
+            glog.error(e)
 
     def stop(self):
         for worker in self.pool:
