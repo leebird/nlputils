@@ -7,6 +7,7 @@ from protolib.python import document_pb2
 import shortuuid
 from ..brat import parser, mapping
 from collections import defaultdict, namedtuple
+import glog
 
 
 class DocHelper(object):
@@ -23,20 +24,19 @@ class DocHelper(object):
     def char_range_in_sentence(self, proto_obj, sentence):
         sent_char_start, _ = self.char_range(sentence)
         return proto_obj.char_start - sent_char_start, \
-            proto_obj.char_end - sent_char_start
+               proto_obj.char_end - sent_char_start
 
     def text(self, proto_obj):
         char_start, char_end = -1, -1
         if type(proto_obj) == document_pb2.Sentence or \
-                type(proto_obj) == document_pb2.Sentence.Constituent:
+                        type(proto_obj) == document_pb2.Sentence.Constituent:
             char_start, char_end = self.char_range(proto_obj)
         elif type(proto_obj) == document_pb2.Entity:
             char_start, char_end = proto_obj.char_start, proto_obj.char_end
 
         return self.doc.text[char_start: char_end + 1]
 
-
-    def getConstituentIndexFromTokenIndex(self,sentence,index):
+    def getConstituentIndexFromTokenIndex(self, sentence, index):
         constituents = sentence.constituent
         for constituent in constituents:
             childrens = constituent.children
@@ -47,17 +47,18 @@ class DocHelper(object):
                 if index == token_start and index == token_end:
                     return constituent.index
 
-    def getParentNPIndexFromLeafTokenIndex(self,sentence,index):
-        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,index)
+    def getParentNPIndexFromLeafTokenIndex(self, sentence, index):
+        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,
+                                                                  index)
         constituent = sentence.constituent[constituentIndex]
         parentConstIndex = constituent.parent
         childConst = constituent
         constituent = sentence.constituent[parentConstIndex]
         label = constituent.label
         while (label == "NP" or label == "NN" or label == "NNS"):
-            #if label == "NP":
-                #return constituent.index
-            crossedCC = self.constituentContainsCC(sentence,constituent.index)
+            # if label == "NP":
+            # return constituent.index
+            crossedCC = self.constituentContainsCC(sentence, constituent.index)
             if crossedCC == 1:
                 return childConst.index
             constituentIndex = constituent.index
@@ -66,8 +67,8 @@ class DocHelper(object):
             constituent = sentence.constituent[parentConstIndex]
             label = constituent.label
         return childConst.index
-       
-    def constituentContainsCC(self,sentence,index):
+
+    def constituentContainsCC(self, sentence, index):
         constituent = sentence.constituent[index]
         children = constituent.children
         for child in children:
@@ -76,10 +77,11 @@ class DocHelper(object):
                 return 1
             if cLabel == ",":
                 return 1
-        return 0    
+        return 0
 
-    def getParentNPIndexFromLeafTokenIndex1(self,sentence,index):
-        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,index)
+    def getParentNPIndexFromLeafTokenIndex1(self, sentence, index):
+        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,
+                                                                  index)
         constituent = sentence.constituent[constituentIndex]
         parentConstIndex = constituent.parent
         constituent = sentence.constituent[parentConstIndex]
@@ -93,54 +95,55 @@ class DocHelper(object):
             label = constituent.label
         return constituentIndex
 
-    def printExtraDependency(self, sentence,depExtra):
+    def printExtraDependency(self, sentence, depExtra):
         govIndex = depExtra.gov_index
         depIndex = depExtra.dep_index
         relation = depExtra.relation
         ruleID = depExtra.rule_id
-       
+
         govNode = self.doc.token[govIndex].word
         depNode = self.doc.token[depIndex].word
-         
-        govParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,govIndex)
-        depParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,depIndex)
-        govParentNP = self.printConstituent(sentence,govParentNPIndex)
-        depParentNP = self.printConstituent(sentence,depParentNPIndex)
 
-        return "Rule ID: " +ruleID + "\nGov: " + govNode + "\t" + govParentNP + "\nRelEdge: "+relation + "\nDep: " + depNode + "\t" + depParentNP + "\n";
+        govParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,
+                                                                   govIndex)
+        depParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,
+                                                                   depIndex)
+        govParentNP = self.printConstituent(sentence, govParentNPIndex)
+        depParentNP = self.printConstituent(sentence, depParentNPIndex)
 
+        return "Rule ID: " + ruleID + "\nGov: " + govNode + "\t" + govParentNP + "\nRelEdge: " + relation + "\nDep: " + depNode + "\t" + depParentNP + "\n";
 
-    def printExtraDependencyAnalysis(self, sentence,depExtra):
+    def printExtraDependencyAnalysis(self, sentence, depExtra):
         govIndex = depExtra.gov_index
         depIndex = depExtra.dep_index
         relation = depExtra.relation
         ruleID = depExtra.rule_id
-       
+
         govNode = self.doc.token[govIndex]
         depNode = self.doc.token[depIndex]
         govNodePos = govNode.pos
         depNodePos = depNode.pos
         govNodeWord = govNode.word
         depNodeWord = depNode.word
-        sentenceTagged = self.tag_tokens_in_sentence(sentence,govNode,depNode)
-        return ruleID+"\t"+govNodePos+"\t"+depNodePos+"\t"+govNodeWord+"\t"+depNodeWord+"\t"+relation+"\t"+sentenceTagged
+        sentenceTagged = self.tag_tokens_in_sentence(sentence, govNode, depNode)
+        return ruleID + "\t" + govNodePos + "\t" + depNodePos + "\t" + govNodeWord + "\t" + depNodeWord + "\t" + relation + "\t" + sentenceTagged
 
-    
     def printConstituent(self, sentence, constituentIndex):
         constituent = sentence.constituent[constituentIndex]
         label = constituent.label
         childrens = constituent.children
-        #returnStr = "( " + label  
+        # returnStr = "( " + label
         if not childrens:
             returnStr = " " + label
-            #returnStr = returnStr + " )" 
-            return returnStr    
+            # returnStr = returnStr + " )"
+            return returnStr
         else:
             returnStr = "( " + label
             for children in childrens:
-                returnStr = returnStr + self.printConstituent(sentence,children)
-            returnStr = returnStr + " )" 
-            return returnStr    
+                returnStr = returnStr + self.printConstituent(sentence,
+                                                              children)
+            returnStr = returnStr + " )"
+            return returnStr
 
     def token(self, proto_obj):
         return self.doc.token[proto_obj.token_start:proto_obj.token_end + 1]
@@ -413,7 +416,8 @@ class DocHelper(object):
                     entity_type = entity_type.lower()
                     if entity_type not in mapping.str_to_entity_type:
                         # Only consider entity types in mapping.
-                        print('Skip entity type:', entity_type, file=sys.stderr)
+                        glog.warning(
+                            'Skip entity type: {0}'.format(entity_type))
                         continue
                     entity = helper.add_entity(entity_id)
                     entity.char_start = entity_start
@@ -482,8 +486,8 @@ class DocHelper(object):
             # start_id = 1
             for entity_id, entity in self.doc.entity.items():
                 if entity.entity_type not in mapping.entity_type_to_str:
-                    print('Skip entity not in mapping', entity.entity_type,
-                          file=sys.stderr)
+                    glog.warning('Skip entity not in mapping: {0}'.format(
+                        entity.entity_type))
                     continue
                 # Note that the entity id may not be of brat format, e.g., T1.
                 # sid = 'T' + str(start_id)
@@ -554,21 +558,21 @@ class DocHelper(object):
             char_start, char_end = self.char_range_in_sentence(entity, sentence)
             slices.append(text[start:char_start])
             slices.append("[")
-            slices.append(text[char_start:char_end+1])
+            slices.append(text[char_start:char_end + 1])
             slices.append("]")
-            start = char_end+1
+            start = char_end + 1
 
         slices.append(text[start:])
         return ''.join(slices)
-    
+
     def naive_tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
             return '</{0}>'.format(
-                    mapping.entity_type_to_str[entity.entity_type])
+                mapping.entity_type_to_str[entity.entity_type])
 
         def open_tag(entity):
             return '<{0}>'.format(
-                    mapping.entity_type_to_str[entity.entity_type])
+                mapping.entity_type_to_str[entity.entity_type])
 
         text = self.text(sentence)
         slices = []
@@ -683,7 +687,6 @@ class DocHelper(object):
         slices.append(text[start:])
         return ''.join(slices)
 
-
     def tag_entity_in_sentence(self, sentence, entities):
         try:
             tagged = self.smart_tag_entity_in_sentence(sentence, entities)
@@ -760,7 +763,7 @@ class RangeHelper(object):
     def token_range_overlap(entity1, entity2):
         return RangeHelper.overlap((entity1.token_start, entity1.token_end),
                                    (entity2.token_start, entity2.token_end))
-    
+
     @staticmethod
     def include(outer_range, inner_range):
         return outer_range[0] <= inner_range[0] and \
