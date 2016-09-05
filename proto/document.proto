@@ -18,30 +18,21 @@ message Sentence {
 	int32 index = 1;
 	int32 token_start = 2;
 	int32 token_end = 3;
-	// Note that this parse string only keeps partial information.
-	// I.e., it will be difficult to recover the char offset for the leaf
-	// nodes, since the leaf nodes are normalized, i.e., '(' to '-LRB-'.
-	// In Stanford CoreNLP, we could use CoreAnnotations.CharacterOffsetBeginAnnotation.class
-	// to get the offset stored in the tree node labels, which are lost when
-	// converted to penn treebank format.
-	// TODO: find a way to keep these information instead of using a string.
 
-	//	string parse = 4;
+	// The sentence parse in penn tree bank format. Currently we only store
+	// this for BLLIP parser.
+	string parse = 4;
+
 	message Constituent {
 		int32 index = 1;
-		// Use token index instead of character offset.
 		int32 token_start = 2;
 		int32 token_end = 3;
 		int32 head_token_index = 4;
-		// int32 char_start = 2;
-		// int32 char_end = 3;
-		// int32 head_char_start = 4;
-		// int32 head_char_end = 5;
 		string label = 5;
 		int32 parent = 6;
 		repeated int32 children = 7;
 	}
-	repeated Constituent constituent = 4;
+	repeated Constituent constituent = 5;
 
 	message Dependency {
 		int32 gov_index = 1;
@@ -49,7 +40,7 @@ message Sentence {
 		string relation = 3;
 		bool isExtra = 4;
 	}
-	repeated Dependency dependency = 5;
+	repeated Dependency dependency = 6;
 	
 	message DependencyExtra {
 		int32 gov_index = 1;
@@ -57,13 +48,13 @@ message Sentence {
 		string relation = 3;
 		string rule_id = 4; 
 	}
-	repeated DependencyExtra dependency_extra = 6;
+	repeated DependencyExtra dependency_extra = 7;
 	
 	message TokenExtra {
 		string name = 1;
 		int32 index = 2;
 	}
-	repeated TokenExtra token_extra = 7;
+	repeated TokenExtra token_extra = 8;
 }
 
 message Entity {
@@ -73,7 +64,7 @@ message Entity {
 	int32 token_start = 4;
 	int32 token_end = 5;
 	enum EntityType {
-		UNSET = 0;  // This would be the default value.
+		UNDEFINED_TYPE = 0;  // This would be the default value.
 		GENE = 1;
 		MIRNA = 2;
 		DISEASE = 3;

@@ -144,6 +144,9 @@ public class StanfordUtil {
             HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
 
+            // Save the parse in penn tree bank format.
+            sbuilder.setParse(parse);
+
             for (Tree leaf : leaves) {
                 if (sentenceBoundary == -1) {
                     sbuilder.setTokenStart(tokenIndex);
@@ -264,6 +267,9 @@ public class StanfordUtil {
             int sentenceTokenIndex = 1;
             HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
+
+            // Save the parse in penn tree bank format.
+            sbuilder.setParse(parse);
 
             for (Tree leaf : leaves) {
                 if (sentenceBoundary == -1) {
