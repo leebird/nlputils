@@ -5,7 +5,7 @@ entity_type_to_str = {
     document_pb2.Entity.GENE: 'Gene',
     document_pb2.Entity.TRIGGER: 'Trigger',
     document_pb2.Entity.SUBCELLULAR_LOCATION: 'Subcellular_location',
-    document_pb2.Entity.UNSET: 'Entity',
+    document_pb2.Entity.UNDEFINED_TYPE: 'Entity',
     # document_pb2.Entity.DISEASE: 'Sentence'
 }
 
@@ -23,6 +23,6 @@ str_to_entity_type = {
     'trigger': document_pb2.Entity.TRIGGER,
     'localization': document_pb2.Entity.TRIGGER,
     'subcellular_location': document_pb2.Entity.SUBCELLULAR_LOCATION,
-    'entity': document_pb2.Entity.UNSET,
+    'entity': document_pb2.Entity.UNDEFINED_TYPE,
     # 'Sentence': document_pb2.Entity.DISEASE
 }
