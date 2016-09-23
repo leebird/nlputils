@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Get path information.
 source "$(dirname $BASH_SOURCE)"/common_path.sh
 
@@ -12,7 +14,7 @@ LIBRARY_PATH=${DEPENDENCY_PATH}/protobuf/src/.libs:${DEPENDENCY_PATH}/grpc/libs/
 export LIBRARY_PATH
 
 # Binary command path.
-PATH=${DEPENDENCY_PATH}/protobuf/src:${DEPENDENCY_PATH}/grpc/bins/opt:$PATH
+PATH=${DEPENDENCY_PATH}/protobuf/src:${DEPENDENCY_PATH}/grpc/bins/opt:${DEPENDENCY_PATH}/apache-maven/bin:$PATH
 export PATH
 
 # Run-time library path.
