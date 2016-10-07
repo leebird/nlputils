@@ -6,6 +6,9 @@ set -e
 # Get path information.
 source "$(dirname $BASH_SOURCE)"/common_path.sh
 
+# Create dependency folder.
+mkdir -p ${DEPENDENCY_PATH}
+
 # Download maven.
 cd ${DEPENDENCY_PATH}
 wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
