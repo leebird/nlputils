@@ -64,6 +64,20 @@ def parse():
     else:
         return render_template('index.html')
 
+@app.route('/highlight', methods=['GET', 'POST'])
+def highlight():
+    if request.method == 'POST':
+        text = request.form['text'].strip()
+        text = text.replace('<Gene>', '<span style="color:blue; font-weight:bold;">')
+        text = text.replace('<Subcellular_location>', '<span style="color:red; font-weight:bold">')
+        text = text.replace('</Gene>', '</span>')
+        text = text.replace('</Subcellular_location>', '</span>')
+
+        lines = text.split('\n')
+        return render_template('highlight.html', lines=lines)
+    else:
+        return render_template('highlight.html')
+
 if __name__ == "__main__":
     app.debug = True
     app.run(host='0.0.0.0')
