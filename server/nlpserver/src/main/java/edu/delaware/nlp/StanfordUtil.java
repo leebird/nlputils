@@ -116,10 +116,9 @@ public class StanfordUtil {
             String sentence_id = Integer.toString(i);
             String sentence_text = sentences.get(sentence_id);
             String parse = parses.get(sentence_id);
-            // Starting character offset of current sentence.
-            int currIndex = text.indexOf(sentence_text, charIndex);
-            // Starting point for next search.
-            charIndex += sentence_text.length();
+            // Starting character offset of current sentence. Search from the last
+	    // offset of charIndex.
+            charIndex = text.indexOf(sentence_text, charIndex);
 
             if (parse == null) {
                 // We skip sentences with no parse, but the necessary index
@@ -146,6 +145,8 @@ public class StanfordUtil {
 
             // Save the parse in penn tree bank format.
             sbuilder.setParse(parse);
+	    sbuilder.setCharStart(charIndex);
+	    sbuilder.setCharEnd(charIndex + sentence_text.length() - 1);
 
             for (Tree leaf : leaves) {
                 if (sentenceBoundary == -1) {
@@ -161,12 +162,12 @@ public class StanfordUtil {
                 String pos = preTerminal.label().value();
                 String unescaped = BllipUtil.unescape(word);
                 String lemma = ((HasLemma) leaf.label()).lemma();
-                int wordCharStart = text.indexOf(unescaped, currIndex);
+                int wordCharStart = text.indexOf(unescaped, charIndex);
 
                 assert wordCharStart >= 0 : sentence_text;
 
                 int wordCharEnd = wordCharStart + unescaped.length() - 1;
-                currIndex = wordCharEnd + 1;
+                charIndex = wordCharEnd + 1;
 
                 // Note that if any of the field is the default value, it woun't be printed.
                 // For example, if the first token is "I", the its char_start, char_end and
@@ -328,7 +329,6 @@ public class StanfordUtil {
             sbuilder.setIndex(sentIndex);
             sentIndex++;
 
-
             buildConstituent(sbuilder, tree, indexMap);
 
             // this is the Stanford dependency graph of the current sentence
@@ -374,16 +374,20 @@ public class StanfordUtil {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
             int sentenceBoundary = -1;
+	    int charEnd = 0;
             HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
 
             for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
                 if (sentenceBoundary == -1) {
                     sbuilder.setTokenStart(tokenIndex);
+		    sbuilder.setCharStart(token.beginPosition());
                 }
                 // this is the POS tag of the token
                 String pos = token.get(PartOfSpeechAnnotation.class);
-
+		
+		charEnd = token.endPosition() - 1;
+		
                 // Note that if any of the field is the default value, it woun't be printed.
                 // For example, if the first token is "I", the its char_start, char_end and
                 // token_id won't be printed by TextFormat.printToString().
@@ -402,6 +406,7 @@ public class StanfordUtil {
             }
 
             sbuilder.setTokenEnd(tokenIndex - 1);
+	    sbuilder.setCharEnd(charEnd);
             sbuilder.setIndex(sentIndex);
             sentIndex++;
 
@@ -438,15 +443,17 @@ public class StanfordUtil {
             // traversing the words in the current sentence
             // a CoreLabel is a CoreMap with additional token-specific methods
             int sentenceBoundary = -1;
-            // HashMap<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
+            int charEnd = 0;
+
             DocumentProto.Sentence.Builder sbuilder = DocumentProto.Sentence.newBuilder();
 
             for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
                 if (sentenceBoundary == -1) {
                     sbuilder.setTokenStart(tokenIndex);
+		    sbuilder.setCharStart(token.beginPosition());
                 }
                 String pos = token.get(PartOfSpeechAnnotation.class);
-
+		charEnd = token.endPosition() - 1;
                 // Note that if any of the field is the default value, it won't be printed.
                 // For example, if the first token is "I", the its char_start, char_end and
                 // token_id won't be printed by TextFormat.printToString().
@@ -463,8 +470,9 @@ public class StanfordUtil {
                 sentenceBoundary = tokenIndex;
                 tokenIndex++;
             }
-
+	    
             sbuilder.setTokenEnd(tokenIndex - 1);
+	    sbuilder.setCharEnd(charEnd);
             sbuilder.setIndex(sentIndex);
             dbuilder.addSentence(sbuilder);
 
