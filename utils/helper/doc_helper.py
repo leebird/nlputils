@@ -262,7 +262,7 @@ class DocHelper(object):
                           e.duid in equivs]
         return equiv_entities
 
-    def add_entity(self, duid=None):
+    def add_entity(self, prefix=None, duid=None):
         if duid is None:
             while True:
                 # duid = uuid.uuid4().hex
@@ -272,13 +272,16 @@ class DocHelper(object):
                 if duid not in self.doc.entity:
                     break
 
+        if prefix is not None:
+            duid = prefix + duid
+
         assert duid is not None
         assert duid not in self.doc.entity
         entity = self.doc.entity.get_or_create(duid)
         entity.duid = duid
         return entity
 
-    def add_relation(self, relation_type, duid=None):
+    def add_relation(self, relation_type, prefix=None, duid=None):
         if duid is None:
             while True:
                 # duid = uuid.uuid4().hex
@@ -286,6 +289,9 @@ class DocHelper(object):
 
                 if duid not in self.doc.relation:
                     break
+
+        if prefix is not None:
+            duid = prefix + duid
 
         assert duid is not None
         assert duid not in self.doc.relation
@@ -296,12 +302,22 @@ class DocHelper(object):
         return relation
 
     def fill_entity_using_char_offset(self, entity):
+        found_token_range = False
         for token in self.doc.token:
             if token.char_start <= entity.char_start <= token.char_end:
                 entity.token_start = token.index
             if token.char_start <= entity.char_end <= token.char_end:
                 entity.token_end = token.index
+                found_token_range = True
                 break
+
+        if not found_token_range:
+            entity.token_start = -1
+            entity.token_end = -1
+            entity.sentence_index = -1
+            glog.warning('Entity token range not found: {} {} {}'.format(
+                self.doc.doc_id, entity.duid, self.text(entity)))
+            return
 
         assert entity.token_start <= entity.token_end, (str(entity),
                                                         self.text(entity),
