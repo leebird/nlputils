@@ -13,6 +13,8 @@ str_to_entity_type = {
     'mirna': document_pb2.Entity.MIRNA,
     'gene': document_pb2.Entity.GENE,
     'protein': document_pb2.Entity.GENE,
+    'family': document_pb2.Entity.GENE,
+    'complex': document_pb2.Entity.GENE,
     # BioInfer corpus types.
     'gene/protein/rna': document_pb2.Entity.GENE,
     'individual_protein': document_pb2.Entity.GENE,

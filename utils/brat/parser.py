@@ -48,6 +48,7 @@ def parse_relation(line):
 
     attrs = None
     if len(fields) > 2:
-        attrs = json.loads(fields[2])
+        if len(fields[2].strip()) > 0:
+            attrs = json.loads(fields[2])
 
     return rid, category_text, arguments, attrs
