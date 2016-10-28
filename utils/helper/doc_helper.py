@@ -1,13 +1,12 @@
 from __future__ import unicode_literals, print_function
-import sys
 import codecs
 import json
-import uuid
-from protolib.python import document_pb2
-import shortuuid
-from ..brat import parser, mapping
 from collections import defaultdict, namedtuple
+import shortuuid
 import glog
+from protolib.python import document_pb2
+from ..brat import parser, mapping
+from .range_helper import RangeHelper
 
 
 class DocHelper(object):
