@@ -2,6 +2,7 @@
 import os
 import bllipparser
 import glog
+import traceback
 
 # NOTE that this BLLIP parser is not thead-safe. See
 # https://github.com/dmcc/bllip-parser/blob/master/python/bllipparser/RerankingParser.py#L537
@@ -38,9 +39,10 @@ class BllipParser(object):
         try:
             parse_tree = self.reranking_parser.simple_parse(sentence)
             return parse_tree.decode('utf8')
-        except Exception as e:
+        except:
             # If any error happens, just raise an RunTimeError.
-            raise RuntimeError("Parsing failed: {0}".format(e))
+            traceback.print_exc()
+            raise RuntimeError("Parsing failed: {0}".format(text))
 
 
 if __name__ == '__main__':
@@ -49,3 +51,17 @@ if __name__ == '__main__':
     print(parse)
     parse = parser.parse_one_sentence(u"你好，test utf8字符串。")
     print(parse.encode('utf8'))
+    try:
+        parse = parser.parse_one_sentence(
+            u'MiR-506 was associated with better response to therapy and longer'
+            u' progression-free and overall survival in two independent '
+            u'epithelial ovarian cancer patient cohorts (PFS: high vs low '
+            u'miR-506 expression; Bagnoli: hazard ratio [HR] = 3.06, 95% '
+            u'confidence interval [CI] = 1.90 to 4.70, P < .0001; TCGA: HR = '
+            u'1.49, 95% CI = 1.00 to 2.25, P = 0.04).')
+        print(parse)
+    except Exception as e:
+        print(e)
+
+    parse = parser.parse_one_sentence(u"I have a book")
+    print(parse)
