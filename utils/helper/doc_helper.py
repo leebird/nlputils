@@ -177,6 +177,10 @@ class DocHelper(object):
     def relation_argument(self, relation):
         args = defaultdict(list)
         for arg in relation.argument:
+            if arg.entity_duid not in self.doc.entity:
+                glog.warning('{}: Entity {} in relation {} not found in entity list'.format(
+                    self.doc.doc_id, arg.entity_duid, relation.duid))
+                continue
             args[arg.role].append(self.doc.entity[arg.entity_duid])
         return args
 
@@ -200,11 +204,16 @@ class DocHelper(object):
         return index
 
     def entity_head_token(self, graph, entity):
+        if type(entity) == document_pb2.Token:
+            # If entity itself is a token.
+            return entity
+
         tokens = self.token(entity)
+        token_ids = {t.index for t in tokens}
         # If the last token is a punctuation, it may not have heads.
         # So in the following codes we update the head with token that
         # has heads.
-        head = tokens[-1]
+        head = tokens[-1].index
 
         # Find head token.
         if len(tokens) > 1:
@@ -213,10 +222,11 @@ class DocHelper(object):
                 # if len(heads) > 0:
                 #    head = token
                 for gov in heads:
-                    if gov in tokens:
+                    if gov in token_ids:
                         head = gov
                         break
-        return head
+
+        return self.doc.token[head]
 
     def has_entity_type(self, entity_type):
         for entity_id, entity in self.doc.entity.items():
@@ -268,11 +278,11 @@ class DocHelper(object):
                 # Use shorteuuid and length 4 uuid.
                 duid = shortuuid.ShortUUID().random(length=4)
 
+                if prefix is not None:
+                    duid = prefix + duid
+
                 if duid not in self.doc.entity:
                     break
-
-        if prefix is not None:
-            duid = prefix + duid
 
         assert duid is not None
         assert duid not in self.doc.entity
@@ -286,11 +296,11 @@ class DocHelper(object):
                 # duid = uuid.uuid4().hex
                 duid = shortuuid.ShortUUID().random(length=4)
 
+                if prefix is not None:
+                    duid = prefix + duid
+
                 if duid not in self.doc.relation:
                     break
-
-        if prefix is not None:
-            duid = prefix + duid
 
         assert duid is not None
         assert duid not in self.doc.relation
@@ -434,7 +444,7 @@ class DocHelper(object):
                         glog.warning(
                             'Skip entity type: {0}'.format(entity_type))
                         continue
-                    entity = helper.add_entity(entity_id)
+                    entity = helper.add_entity(duid=entity_id)
                     entity.char_start = entity_start
                     entity.char_end = entity_end - 1
                     entity.entity_type = mapping.str_to_entity_type[entity_type]
@@ -445,7 +455,7 @@ class DocHelper(object):
                     relations.append(parser.parse_relation(line))
 
             for eid, etype, trigger_id, arguments, attrs in events:
-                event = helper.add_relation(etype, eid)
+                event = helper.add_relation(relation_type=etype, duid=eid)
                 trigger = event.argument.add()
                 trigger.entity_duid = trigger_id
                 trigger.role = 'Trigger'
@@ -463,9 +473,9 @@ class DocHelper(object):
 
             for rid, rtype, arguments, attrs in relations:
                 if rid.startswith('R'):
-                    relation = helper.add_relation(rtype, rid)
+                    relation = helper.add_relation(relation_type=rtype, duid=rid)
                 else:
-                    relation = helper.add_relation(rtype)
+                    relation = helper.add_relation(relation_type=rtype)
                 for role, arg_id in arguments:
                     arg = relation.argument.add()
                     arg.role = role
@@ -517,8 +527,8 @@ class DocHelper(object):
                                           entity_text)
                 f.write(line)
 
-            event_line = '{0}\t{1}:{2} {3}:{4} {5}:{6}\t{7}\n'
-            rel_line = '{0}\t{1} {2}:{3} {4}:{5}\t{6}\n'
+            event_line = '{0}\t{1}:{2} {3}\t{4}\n'
+            rel_line = '{0}\t{1} {2}\t{3}\n'
             for er_id, event_or_rel in self.doc.relation.items():
                 arguments = defaultdict(list)
                 for arg in event_or_rel.argument:
@@ -529,20 +539,29 @@ class DocHelper(object):
                     attributes[attr.key].append(attr.value)
                 attributes_json = json.dumps(attributes)
 
+                all_args = []
+                for role, args in arguments.items():
+                    if role == 'Trigger':
+                        continue
+                    for arg in args:
+                        one_arg = '{}:{}'.format(role, arg)
+                        all_args.append(one_arg)
+
+                if len(arguments['Trigger']) > 1:
+                    assert len(arguments['Trigger']) == 1
+
                 if event_or_rel.duid.startswith('E'):
                     assert len(arguments['Trigger']) == 1
                     line = event_line.format(event_or_rel.duid,
                                              event_or_rel.relation_type,
                                              arguments['Trigger'][0],
-                                             'Agent', arguments['Agent'][0],
-                                             'Theme', arguments['Theme'][0],
+                                             ' '.join(all_args),
                                              attributes_json)
                     f.write(line)
-                elif event_or_rel.duid.startswith('R'):
+                else:
                     line = rel_line.format(event_or_rel.duid,
                                            event_or_rel.relation_type,
-                                           'Arg1', arguments['Arg1'][0],
-                                           'Arg2', arguments['Arg2'][0],
+                                           ' '.join(all_args),
                                            attributes_json)
                     f.write(line)
 
@@ -561,6 +580,19 @@ class DocHelper(object):
                 base_phrase.append(cst)
 
         return sorted(base_phrase, key=lambda a: a.char_start)
+
+    def get_base_noun_phrase_head(self, constituents, token):
+        # Return token's base NP's head.
+        min_range = float('inf')
+        head = None
+        for cst in constituents:
+            if not cst.label.startswith('NP'):
+                continue
+            if cst.token_start <= token.index <= cst.token_end:
+                if cst.token_end - cst.token_start + 1 < min_range:
+                    head = cst.head_token_index
+        if head is not None:
+            return self.doc.token[head]
 
     def tag_tokens_in_sentence(self, sentence, token1, token2):
         text = self.text(sentence)
