@@ -61,13 +61,15 @@ def _bllip_parser_worker(name, input_queue, output_queue):
             except RuntimeError:
                 # Catch RuntimeError but not ValueError (caused by non-unicode
                 # string).
+                glog.info('BLLIP parser {} exits due to RuntimeError for '
+                          'sentence: {}'.format(worker_process, sentence))
                 output_queue.put(None)
             else:
                 output_queue.put(parse_tree)
         except (IOError, KeyboardInterrupt):
             # Unrecoverable errors.
-            glog.info('BLLIP parser {} exits due to unrecoverable '
-                      'exception'.format(worker_process))
+            glog.info('BLLIP parser {} exits due to IOError or '
+                      'KeyboardInterrupt'.format(worker_process))
             break
 
     # Output peak memory at the end.
@@ -92,7 +94,8 @@ class BllipWorker(object):
         self.parsed_count = 0
 
         # At most parse this many sentences for one process.
-        self.max_sentence_limit = 5000
+        # Each 100 abstracts cost addtional 300 MB memory.
+        self.max_sentence_limit = 2000
 
         # Start the corresponding worker in a new process.
         glog.info('Starting BLLIP worker...')
@@ -119,9 +122,10 @@ class BllipWorker(object):
         # BllipManager. Use lock to ensure input/output matching.
         self.lock.acquire()
         if self.parsed_count >= self.max_sentence_limit:
-            # Create a new parser process after 5000 sentences.
+            # Create a new parser process after 2000 sentences.
             glog.info(self.name + ' reached max sentence limit')
             glog.info('Shutting down ' + self.name)
+            self.parsed_count = 0
             self.stop()
             self.init_worker()
 
@@ -130,9 +134,12 @@ class BllipWorker(object):
 
         # If parse is None, something wrong in the parser, probably caused
         # by the sentence. Restart the parser and return the None result.
+        # Don't restart it for now. Most error sentences are ".".
         if parse is None:
-            self.stop()
-            self.init_worker()
+            glog.warning('Parse error: {}'.format(sentence))
+            #self.parsed_count = 0
+            #self.stop()
+            #self.init_worker()
         self.lock.release()
         return parse
 

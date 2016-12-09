@@ -35,9 +35,6 @@
         );
 
 
-        var docListStanford = eval({{ brat_string_stanford | safe }});
-        var docListBllip = eval({{ brat_string_bllip | safe }});
-
         var collData = {
             "visual_options": {"arc_bundle": "none"},
             "protocol": 1,
@@ -626,7 +623,19 @@
             }],
             "relation_attribute_types": []
         };
+
         head.ready(function () {
+            var docListStanford = eval({{ parse_stanford | safe }});
+            var docListBllip = eval({{ parse_bllip | safe }});
+            var docListSplitStanford = eval({{ split_stanford | safe }});
+	    console.log(docListSplitStanford);
+	    if (docListSplitStanford !== undefined) {
+                for (var doc in docListSplitStanford) {
+                    $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="doc-' + doc + '"></div><br />');
+                    Util.embed('doc-'+doc, collData, docListSplitStanford[doc], webFontURLs);
+            }
+	}
+	else {
             for (var doc in docListBllip) {
                 $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + '<div id="bli-doc-' + doc + '"></div><br />');
                 Util.embed('bli-doc-'+doc, collData, docListBllip[doc], webFontURLs);
@@ -634,8 +643,8 @@
                 $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="stf-doc-' + doc + '"></div><br />');
                 Util.embed('stf-doc-'+doc, collData, docListStanford[doc], webFontURLs);
                 $('#wrapper').append('<br><br>');
-
-            }
+		}
+	    }
         });
     </script>
 
@@ -655,6 +664,7 @@
 <form action="./" method="POST">
     <!--<label for="text">Text:</label>-->
     <textarea name="text" id="text" rows=4 cols=100>{{ text }}</textarea><br/>
+    <input name="split" id="split" type="checkbox">Only split sentences</input><br/>
     <input type="submit"/>
 </form>
 <div id="wrapper" style="width:100%;"></div>

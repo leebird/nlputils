@@ -7,7 +7,7 @@ import glog
 
 class BllipServicer(rpc_pb2.BetaBllipParserServicer):
     def __init__(self):
-        self.pool_size = 2
+        self.pool_size = 15
         glog.info('Waiting for BLLIP manager init...')
         self.manager = BllipManager(self.pool_size)
         glog.info('BLLIP manager inited')
@@ -25,7 +25,7 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
 def serve():
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
     server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(),
-                                                    pool_size=20,
+                                                    pool_size=10,
                                                     default_timeout=600)
     server.add_insecure_port('[::]:8901')
     server.start()
@@ -36,6 +36,7 @@ def serve():
         server.stop(0)
          
 if __name__ == '__main__':
+    glog.setLevel(glog.DEBUG)
     serve()
 
 
