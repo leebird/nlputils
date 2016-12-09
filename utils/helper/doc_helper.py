@@ -342,7 +342,7 @@ class DocHelper(object):
         for entity_id, entity in self.doc.entity.items():
             self.fill_entity_using_char_offset(entity)
 
-    def dependencpy_for_brat(self, sentence):
+    def dependency_for_brat(self, sentence):
         count = 1
         entities = []
         sent_text = self.text(sentence)
