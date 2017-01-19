@@ -628,7 +628,8 @@
             var docListStanford = eval({{ parse_stanford | safe }});
             var docListBllip = eval({{ parse_bllip | safe }});
             var docListSplitStanford = eval({{ split_stanford | safe }});
-	    console.log(docListSplitStanford);
+	    var cstListBllip = eval({{ bllip_cst_parses | safe }});
+
 	    if (docListSplitStanford !== undefined) {
                 for (var doc in docListSplitStanford) {
                     $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="doc-' + doc + '"></div><br />');
@@ -637,7 +638,8 @@
 	}
 	else {
             for (var doc in docListBllip) {
-                $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + '<div id="bli-doc-' + doc + '"></div><br />');
+                $('#wrapper').append('<div><span>Sent ' + doc + ' (BLLIP)</span></div>' + 
+	          '<div id="bli-doc-' + doc + '"></div><div class="bli-cst">' + cstListBllip[doc] + '</div><br />');
                 Util.embed('bli-doc-'+doc, collData, docListBllip[doc], webFontURLs);
                 <!-- Assume they have the same length -->
                 $('#wrapper').append('<div><span>Sent ' + doc + ' (Stanford)</span></div>' + '<div id="stf-doc-' + doc + '"></div><br />');
@@ -657,6 +659,10 @@
             border: 1px solid #000000;
             padding: 5px;
         }
+	div.bli-cst {
+	    font-size:10px;
+	    color:#999;
+	}
     </style>
 </head>
 

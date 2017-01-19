@@ -64,12 +64,17 @@ def parse():
         parse_doc_bllip_brat = ''
         parse_doc_stanford_brat = ''
         split_doc_brat = ''
+        cst_parses = ''
 
         if len(split) == 0:
             parse_doc_bllip = parse_using_bllip(doc)
             parse_doc_stanford = parse_using_stanford(doc)
             parse_doc_bllip_brat = json.dumps(get_brat_data(parse_doc_bllip))
             parse_doc_stanford_brat = json.dumps(get_brat_data(parse_doc_stanford))
+            parses = {}
+            for sentence in parse_doc_bllip.sentence:
+                parses[sentence.index] = sentence.parse
+            cst_parses = json.dumps(parses)
         else:
             split_doc = split_sentence_using_stanford(doc)
             split_doc_brat = json.dumps(get_brat_data(split_doc))
@@ -78,7 +83,8 @@ def parse():
         return render_template('index.html', text=text,
                                parse_bllip=parse_doc_bllip_brat,
                                parse_stanford=parse_doc_stanford_brat,
-                               split_stanford=split_doc_brat)
+                               split_stanford=split_doc_brat,
+                               bllip_cst_parses=cst_parses)
     else:
         return render_template('index.html')
 
