@@ -30,7 +30,7 @@ class DocHelper(object):
         if type(proto_obj) == document_pb2.Sentence or \
                         type(proto_obj) == document_pb2.Sentence.Constituent:
             char_start, char_end = self.char_range(proto_obj)
-        elif type(proto_obj) == document_pb2.Entity:
+        elif type(proto_obj) == document_pb2.Entity or type(proto_obj) == document_pb2.Token:
             char_start, char_end = proto_obj.char_start, proto_obj.char_end
 
         return self.doc.text[char_start: char_end + 1]
@@ -433,7 +433,8 @@ class DocHelper(object):
 
                 assert len(line.strip()) > 0
                 assert line[0] == 'T' or line[0] == 'E' or \
-                       line[0] == 'R' or line[0] == '*' or line[0] == 'M'
+                       line[0] == 'R' or line[0] == '*' or \
+                       line[0] == 'M' or line[0] == 'A'
 
                 if line[0] == 'T':
                     entity_id, entity_text, entity_type, entity_start, entity_end \
@@ -584,15 +585,98 @@ class DocHelper(object):
     def get_base_noun_phrase_head(self, constituents, token):
         # Return token's base NP's head.
         min_range = float('inf')
-        head = None
+        head = token.index
         for cst in constituents:
             if not cst.label.startswith('NP'):
                 continue
             if cst.token_start <= token.index <= cst.token_end:
                 if cst.token_end - cst.token_start + 1 < min_range:
                     head = cst.head_token_index
-        if head is not None:
-            return self.doc.token[head]
+                    min_range = cst.token_end - cst.token_start + 1
+        return self.doc.token[head]
+
+    def get_max_noun_phrase(self, constituents, token):
+        # Return token's base NP's head.
+        head = token.index
+        basic_cst = None
+        for cst in constituents:
+            if len(cst.children) == 0:
+                # Skip text node.
+                continue
+            if cst.token_start == head == cst.token_end:
+                basic_cst = cst
+
+        if basic_cst is not None:
+            curr = basic_cst
+            while True:
+                if curr.parent == curr.index:
+                    break
+                parent = constituents[curr.parent]
+                if not parent.label.startswith('N') and not parent.label.startswith('J') and not parent.label.startswith('P'):
+                    break
+                curr = parent
+            if curr is not None:
+                return curr
+
+    def get_noun_phrase_head(self, constituents, token):
+        # Return token's largest NP's head.
+        # E.g., full name (short name) cell, cell is the head.
+        min_range = float('inf')
+        min_np = None
+        for cst in constituents:
+            if not cst.label.startswith('NP'):
+                continue
+            if cst.token_start <= token.index <= cst.token_end:
+                if cst.token_end - cst.token_start + 1 < min_range:
+                    min_np = cst
+
+        if min_np is not None:
+            curr_np = min_np
+            max_np = min_np
+            while True:
+                parent = curr_np.parent
+                if parent == 0:
+                    break
+                parent_cp = constituents[parent]
+
+                if (parent_cp.label.startswith('NP') or
+                    parent_cp.label == 'PRN'):
+                    curr_np = parent_cp
+                else:
+                    break
+
+                if parent_cp.label.startswith('NP'):
+                    max_np = parent_cp
+
+            return self.doc.token[max_np.head_token_index]
+
+    def get_noun_phrase_head_by_dependency(self, graph, token, trigger):
+        head = token.index
+        visited = {head}
+        while True:
+            govs = graph.dep_to_gov[head]
+            if len(govs) == 0:
+                break
+
+            should_continue = True
+            for gov, relation in govs:
+                if not self.doc.token[gov].pos.startswith('N'):
+                    should_continue = False
+                if relation == 'root':
+                    should_continue = False
+                if gov == trigger.index:
+                    should_continue = False
+                if gov in visited:
+                    should_continue = False
+                visited.add(gov)
+
+            if not should_continue:
+                break
+
+            for gov, relation in govs:
+                head = gov
+
+        return self.doc.token[head]
 
     def tag_tokens_in_sentence(self, sentence, token1, token2):
         text = self.text(sentence)

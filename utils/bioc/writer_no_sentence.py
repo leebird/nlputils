@@ -51,6 +51,7 @@ with codecs.open(json_file_path, 'r', 'utf8') as jf, \
             sentences = [e for e in doc['entity'] if e['entityType'] == 'SENTENCE']
             # Sort sentences by its character offset.
             sentences = sorted(sentences, key=lambda s: s['charStart'])
+            sentences = []
 
             with xf.element('document'):
                 with xf.element('id'):

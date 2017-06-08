@@ -1,12 +1,4 @@
 from __future__ import unicode_literals, print_function
-import os
-import sys
-import json
-import codecs
-from collections import defaultdict
-
-# NLP utils.
-from protolib.python.document_pb2 import Document
 from protolib.python.rpc_pb2 import Request
 
 

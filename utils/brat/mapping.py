@@ -24,6 +24,7 @@ str_to_entity_type = {
     # BioNLP corpus types.
     'trigger': document_pb2.Entity.TRIGGER,
     'localization': document_pb2.Entity.TRIGGER,
+    'phosphorylation': document_pb2.Entity.TRIGGER,
     'subcellular_location': document_pb2.Entity.SUBCELLULAR_LOCATION,
     'entity': document_pb2.Entity.UNDEFINED_TYPE,
     # 'Sentence': document_pb2.Entity.DISEASE

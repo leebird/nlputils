@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 from ..helper import RangeHelper
 
 
-def extract_mid_word(helper, entity1, entity2):
+def extract_mid_token(helper, entity1, entity2):
     if RangeHelper.char_range_overlap(entity1, entity2):
         return []
     
@@ -11,33 +11,33 @@ def extract_mid_word(helper, entity1, entity2):
     else:
         start, end = entity1.token_end + 1, entity2.token_start - 1
 
-    words = []
+    tokens = []
     for token in helper.doc.token[start:end+1]:
-        words.append(token.word)
+        tokens.append(token)
     
-    return words
+    return tokens
 
 
-def extract_left_word(helper, sentence, entity, word_num):
+def extract_left_token(helper, sentence, entity, word_num):
     start = entity.token_start - word_num
     if start < sentence.token_start:
         start = sentence.token_start
 
-    words = []
+    tokens = []
     for token in helper.doc.token[start: entity.token_start]:
-        words.append(token.word)
-    return words
+        tokens.append(token)
+    return tokens
 
 
-def extract_right_word(helper, sentence, entity, word_num):
+def extract_right_token(helper, sentence, entity, word_num):
     end = entity.token_end + word_num
     if end > sentence.token_end:
         end = sentence.token_end
 
-    words = []
+    tokens = []
     for token in helper.doc.token[entity.token_end+1: end+1]:
-        words.append(token.word)
-    return words
+        tokens.append(token)
+    return tokens
 
     
 

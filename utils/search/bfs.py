@@ -13,7 +13,7 @@ def _has_node(path, node, node_equal):
     return False
 
 
-def shortest_path(src_path, dst_node, next_nodes_getter, node_equal):
+def shortest_path(src_path, dst_node, next_nodes_getter, node_equal, must_contain_other_node=False):
     """Find the shortest path from src to dst. The direction of the search is
     defined in the next nodes getter, and transparent to the search algorithm.
     """
@@ -24,10 +24,11 @@ def shortest_path(src_path, dst_node, next_nodes_getter, node_equal):
         last_node = partial[-1]
 
         next_nodes = next_nodes_getter(last_node)
-
         for next_node in next_nodes:
             if node_equal(next_node, dst_node):
                 partial.append(next_node)
+                if must_contain_other_node and len(partial) < 3:
+                    continue
                 return partial
             elif _has_node(partial, next_node, node_equal):
             #elif next_node in partial:

@@ -79,9 +79,12 @@ def directed_shortest_path(graph, src, dst, direction=PathDirection.gov_to_dep):
     return shortest_path(graph, src_path, dst_element, elements_getter)
     
 
-def undirected_shortest_dep_path(graph, src, dst):
-    src_path = []
-    src_path.append(PathNode(src, None, None))
+def undirected_shortest_dep_path(graph, src, dst, must_contain_other_node=False):
+    # If src and dst are same node, return empty path.
+    if src == dst:
+        return []
+
+    src_path = [PathNode(src, None, None)]
     dst_node = PathNode(dst, None, None)
 
     def elements_getter(ele):
@@ -93,4 +96,4 @@ def undirected_shortest_dep_path(graph, src, dst):
     def node_equal(node1, node2):
         return node1.token_index == node2.token_index
             
-    return shortest_path(src_path, dst_node, elements_getter, node_equal)
+    return shortest_path(src_path, dst_node, elements_getter, node_equal, must_contain_other_node)
