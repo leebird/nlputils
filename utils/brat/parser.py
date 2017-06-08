@@ -23,6 +23,8 @@ def parse_event(line):
 
     arguments = []
     for arg in info[1:]:
+        if len(arg) == 0:
+            continue
         arg_category, arg_entity_id = arg.split(':')
         arguments.append((arg_category, arg_entity_id))
 
