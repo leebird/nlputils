@@ -42,7 +42,7 @@ class BllipParser(object):
         except:
             # If any error happens, just raise an RunTimeError.
             traceback.print_exc()
-            raise RuntimeError("Parsing failed: {0}".format(text))
+            raise RuntimeError("Parse failed: {0}".format(text.encode('utf8')))
 
 
 if __name__ == '__main__':

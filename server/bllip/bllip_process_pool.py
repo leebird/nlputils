@@ -61,8 +61,8 @@ def _bllip_parser_worker(name, input_queue, output_queue):
             except RuntimeError:
                 # Catch RuntimeError but not ValueError (caused by non-unicode
                 # string).
-                glog.info('BLLIP parser {} exits due to RuntimeError for '
-                          'sentence: {}'.format(worker_process, sentence))
+                glog.info('RuntimeError {}, sentence: {}'.format(
+                    worker_process, sentence))
                 output_queue.put(None)
             else:
                 output_queue.put(parse_tree)

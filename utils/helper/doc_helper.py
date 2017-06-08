@@ -357,12 +357,13 @@ class DocHelper(object):
 
         count = 1
         relations = []
-        for dep_relation in sentence.dependency:
+        for dep_relation in sentence.dependency:            
             rid = 'R' + str(count)
             dep = dep_relation.dep_index
             gov = dep_relation.gov_index
             relation = dep_relation.relation
-
+            if relation == 'root':
+                continue
             dep_tid = index2tid[dep]
             gov_tid = index2tid[gov]
             relations.append([rid, relation, [['Governer', gov_tid],
@@ -507,6 +508,16 @@ class DocHelper(object):
                                               self.text(sent))
                     f.write(line)
                     start_id += 1
+            
+            trigger_types = {}
+            for rel_id, rel in self.doc.relation.items():
+                arguments = defaultdict(list)
+                for arg in rel.argument:
+                    arguments[arg.role].append(arg.entity_duid)
+
+                if 'Trigger' in arguments:
+                    for trigger in arguments['Trigger']:
+                        trigger_types[trigger] = rel.relation_type
 
             # start_id = 1
             for entity_id, entity in self.doc.entity.items():
@@ -518,6 +529,8 @@ class DocHelper(object):
                 # sid = 'T' + str(start_id)
                 # start_id += 1
                 entity_type = mapping.entity_type_to_str[entity.entity_type]
+                if entity_type == 'Trigger' and entity.duid in trigger_types:
+                    entity_type = trigger_types[entity.duid]
                 entity_text = self.text(entity)
                 line = entity_line.format(entity.duid,
                                           # sid,
