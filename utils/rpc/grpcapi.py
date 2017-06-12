@@ -47,6 +47,16 @@ def _request_processor(interface, inqueue, dequeue):
         response = interface.process_document(request)
         dequeue.put(response.SerializeToString())
 
+def _request_processor_edg(interface, inqueue, dequeue):
+    while True:
+        request_bytes = inqueue.get()
+        if request_bytes is None:
+            dequeue.put(None)
+            break
+        request = rpc_pb2.EdgRequest()
+        request.ParseFromString(request_bytes)
+        response = interface.edg_process_document(request)
+        dequeue.put(response.SerializeToString())
 
 def _serialize(iterable, inqueue, writer_num):
     for i in iterable:
@@ -56,19 +66,22 @@ def _serialize(iterable, inqueue, writer_num):
     glog.info('Input read done')
 
 
-def get_queue(server, port, request_thread_num, iterable_request):
+def get_queue(server, port, request_thread_num, iterable_request, edg_request_processor = False):
     interface = GrpcInterface(server, port)
     manager = mp.Manager()
     inqueue = manager.Queue(request_thread_num * 4)
     dequeue = manager.Queue(request_thread_num)
 
+    request_processor_method = _request_processor
+    if edg_request_processor == True:
+        request_processor_method = _request_processor_edg
     glog.info('Start input reading thread')
     thread = threading.Thread(target=_serialize, args=(iterable_request, inqueue, request_thread_num))
     thread.start()
 
     glog.info('Start {0} request processor threads'.format(request_thread_num))
     for i in range(request_thread_num):
-        thread = threading.Thread(target=_request_processor, args=(interface, inqueue, dequeue))
+        thread = threading.Thread(target=request_processor_method, args=(interface, inqueue, dequeue))
         thread.start()
 
     glog.info('Read from output queue...')
