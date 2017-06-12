@@ -1,0 +1,14 @@
+RuleID : prop_mc_arg
+Cond_0 : {}=N0 >/arg.*/=R1 {}=N1
+Cond_1 : {}=N1 >member_collection {}=N2
+Action_1 : N0 >> R1_mc >> N2
+
+RuleID : prop_appos_arg
+Cond_0 : {}=N0 >/arg.*/=R1 {}=N1
+Cond_1 : {}=N1 >appos {}=N2
+Action_1 : N0 >> R1_appos >> N2
+
+RuleID : prop_mc_any
+Cond_1 : {}=N1 >member_collection {}=N2
+Cond_0 : {}=N0 >=R1 {}=N1
+Action_1 : N0 >> R1_mc >> N2

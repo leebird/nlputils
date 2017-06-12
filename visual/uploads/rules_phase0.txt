@@ -1,0 +1,8 @@
+RuleID : memberCollection_1
+Cond_1 : {tag:NNS}=N0 >/(nmod:such_as|nmod:including)/ {}=N1
+Action_1 : N0 >> member_collection >> N1
+
+RuleID : isa_1
+Cond_0 : {}=N0 >nsubj {}=N1
+Cond_1 : {}=N0 >cop {}=N2
+Action_1 : N0 >> is_a >> N1

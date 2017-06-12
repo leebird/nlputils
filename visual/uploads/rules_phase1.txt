@@ -1,0 +1,13 @@
+RuleID : active_1
+Cond_0 : {tag:/VB.*/}=N0
+Cond_1 : {}=N0 >nsubj {}=N1
+Cond_2 : {}=N0 >dobj {}=N2
+Action_1 : N0 >> arg0 >> N1
+Action_2 : N0 >> arg1 >> N2
+
+RuleID : predIn_1
+Cond_0 : {tag:/VBN/}=N0
+Cond_1 : {}=N0 >nsubjpass {}=N1
+Cond_2 : {}=N0 >/nmod:in/ {}=N2
+Action_1 : N0 >> arg0 >> N1
+Action_2 : N0 >> arg1 >> N2
