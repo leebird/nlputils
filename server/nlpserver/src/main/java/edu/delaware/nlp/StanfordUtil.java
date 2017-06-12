@@ -336,7 +336,7 @@ public class StanfordUtil {
             UniversalEnglishGrammaticalStructure sd = new UniversalEnglishGrammaticalStructure(tree);
             SemanticGraph dependencies = new SemanticGraph(sd.typedDependenciesCCprocessed());
 
-			String depString = dependencies.toFormattedString();
+			//String depString = dependencies.toFormattedString();
 
             //Semregex Matching done : Samir
             for(EdgRulesProto.Rule rule : rules) {
