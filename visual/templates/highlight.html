@@ -1,0 +1,25 @@
+<html lang="en-US">
+<head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8">
+    <style>
+        li {
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<form action="./highlight" method="POST">
+    <!--<label for="text">Text:</label>-->
+    <textarea name="text" id="text" rows=4 cols=100>{{ text }}</textarea><br/>
+    <input type="submit"/>
+</form>
+<div id="wrapper" style="width:70%;">
+    <ol>
+        {% for line in lines %}
+            <li>{{ line|safe }}</li>
+        {% endfor %}
+    </ol>
+</div>
+</body>
+</html>

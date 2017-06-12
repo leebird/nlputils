@@ -23,6 +23,8 @@ def parse_event(line):
 
     arguments = []
     for arg in info[1:]:
+        if len(arg) == 0:
+            continue
         arg_category, arg_entity_id = arg.split(':')
         arguments.append((arg_category, arg_entity_id))
 
@@ -48,6 +50,7 @@ def parse_relation(line):
 
     attrs = None
     if len(fields) > 2:
-        attrs = json.loads(fields[2])
+        if len(fields[2].strip()) > 0:
+            attrs = json.loads(fields[2])
 
     return rid, category_text, arguments, attrs

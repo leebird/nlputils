@@ -1,14 +1,13 @@
 from __future__ import unicode_literals, print_function
-import sys
 import codecs
 import json
-import uuid
-from protolib.python import document_pb2
-import shortuuid
-from ..brat import parser, mapping
 from collections import defaultdict, namedtuple
+import shortuuid
 import glog
 import re
+from protolib.python import document_pb2
+from ..brat import parser, mapping
+from .range_helper import RangeHelper
 
 class DocHelper(object):
     def __init__(self, doc):
@@ -31,7 +30,7 @@ class DocHelper(object):
         if type(proto_obj) == document_pb2.Sentence or \
                         type(proto_obj) == document_pb2.Sentence.Constituent:
             char_start, char_end = self.char_range(proto_obj)
-        elif type(proto_obj) == document_pb2.Entity:
+        elif type(proto_obj) == document_pb2.Entity or type(proto_obj) == document_pb2.Token:
             char_start, char_end = proto_obj.char_start, proto_obj.char_end
 
         return self.doc.text[char_start: char_end + 1]
@@ -257,6 +256,10 @@ class DocHelper(object):
     def relation_argument(self, relation):
         args = defaultdict(list)
         for arg in relation.argument:
+            if arg.entity_duid not in self.doc.entity:
+                glog.warning('{}: Entity {} in relation {} not found in entity list'.format(
+                    self.doc.doc_id, arg.entity_duid, relation.duid))
+                continue
             args[arg.role].append(self.doc.entity[arg.entity_duid])
         return args
 
@@ -280,11 +283,16 @@ class DocHelper(object):
         return index
 
     def entity_head_token(self, graph, entity):
+        if type(entity) == document_pb2.Token:
+            # If entity itself is a token.
+            return entity
+
         tokens = self.token(entity)
+        token_ids = {t.index for t in tokens}
         # If the last token is a punctuation, it may not have heads.
         # So in the following codes we update the head with token that
         # has heads.
-        head = tokens[-1]
+        head = tokens[-1].index
 
         # Find head token.
         if len(tokens) > 1:
@@ -293,10 +301,11 @@ class DocHelper(object):
                 # if len(heads) > 0:
                 #    head = token
                 for gov in heads:
-                    if gov in tokens:
+                    if gov in token_ids:
                         head = gov
                         break
-        return head
+
+        return self.doc.token[head]
 
     def has_entity_type(self, entity_type):
         for entity_id, entity in self.doc.entity.items():
@@ -341,12 +350,15 @@ class DocHelper(object):
                           e.duid in equivs]
         return equiv_entities
 
-    def add_entity(self, duid=None):
+    def add_entity(self, prefix=None, duid=None):
         if duid is None:
             while True:
                 # duid = uuid.uuid4().hex
                 # Use shorteuuid and length 4 uuid.
                 duid = shortuuid.ShortUUID().random(length=4)
+
+                if prefix is not None:
+                    duid = prefix + duid
 
                 if duid not in self.doc.entity:
                     break
@@ -357,11 +369,14 @@ class DocHelper(object):
         entity.duid = duid
         return entity
 
-    def add_relation(self, relation_type, duid=None):
+    def add_relation(self, relation_type, prefix=None, duid=None):
         if duid is None:
             while True:
                 # duid = uuid.uuid4().hex
                 duid = shortuuid.ShortUUID().random(length=4)
+
+                if prefix is not None:
+                    duid = prefix + duid
 
                 if duid not in self.doc.relation:
                     break
@@ -375,12 +390,22 @@ class DocHelper(object):
         return relation
 
     def fill_entity_using_char_offset(self, entity):
+        found_token_range = False
         for token in self.doc.token:
             if token.char_start <= entity.char_start <= token.char_end:
                 entity.token_start = token.index
             if token.char_start <= entity.char_end <= token.char_end:
                 entity.token_end = token.index
+                found_token_range = True
                 break
+
+        if not found_token_range:
+            entity.token_start = -1
+            entity.token_end = -1
+            entity.sentence_index = -1
+            glog.warning('Entity token range not found: {} {} {}'.format(
+                self.doc.doc_id, entity.duid, self.text(entity)))
+            return
 
         assert entity.token_start <= entity.token_end, (str(entity),
                                                         self.text(entity),
@@ -396,7 +421,7 @@ class DocHelper(object):
         for entity_id, entity in self.doc.entity.items():
             self.fill_entity_using_char_offset(entity)
 
-    def dependencpy_for_brat(self, sentence):
+    def dependency_for_brat(self, sentence):
         count = 1
         entities = []
         sent_text = self.text(sentence)
@@ -412,8 +437,6 @@ class DocHelper(object):
         count = 1
         relations = []
         for dep_relation in sentence.dependency:
-            #if re.search(r'root',dep_relation.relation):
-            #    continue
             if re.search(r'_opn',dep_relation.relation):
                 continue
             if re.search(r'arg',dep_relation.relation):
@@ -428,6 +451,8 @@ class DocHelper(object):
             dep = dep_relation.dep_index
             gov = dep_relation.gov_index
             relation = dep_relation.relation
+            if relation == 'root':
+                continue
             dep_tid = index2tid[dep]
             gov_tid = index2tid[gov]
             relations.append([rid, relation, [['Governer', gov_tid],
@@ -506,7 +531,8 @@ class DocHelper(object):
 
                 assert len(line.strip()) > 0
                 assert line[0] == 'T' or line[0] == 'E' or \
-                       line[0] == 'R' or line[0] == '*' or line[0] == 'M'
+                       line[0] == 'R' or line[0] == '*' or \
+                       line[0] == 'M' or line[0] == 'A'
 
                 if line[0] == 'T':
                     entity_id, entity_text, entity_type, entity_start, entity_end \
@@ -517,7 +543,7 @@ class DocHelper(object):
                         glog.warning(
                             'Skip entity type: {0}'.format(entity_type))
                         continue
-                    entity = helper.add_entity(entity_id)
+                    entity = helper.add_entity(duid=entity_id)
                     entity.char_start = entity_start
                     entity.char_end = entity_end - 1
                     entity.entity_type = mapping.str_to_entity_type[entity_type]
@@ -528,7 +554,7 @@ class DocHelper(object):
                     relations.append(parser.parse_relation(line))
 
             for eid, etype, trigger_id, arguments, attrs in events:
-                event = helper.add_relation(etype, eid)
+                event = helper.add_relation(relation_type=etype, duid=eid)
                 trigger = event.argument.add()
                 trigger.entity_duid = trigger_id
                 trigger.role = 'Trigger'
@@ -546,9 +572,9 @@ class DocHelper(object):
 
             for rid, rtype, arguments, attrs in relations:
                 if rid.startswith('R'):
-                    relation = helper.add_relation(rtype, rid)
+                    relation = helper.add_relation(relation_type=rtype, duid=rid)
                 else:
-                    relation = helper.add_relation(rtype)
+                    relation = helper.add_relation(relation_type=rtype)
                 for role, arg_id in arguments:
                     arg = relation.argument.add()
                     arg.role = role
@@ -580,6 +606,16 @@ class DocHelper(object):
                                               self.text(sent))
                     f.write(line)
                     start_id += 1
+            
+            trigger_types = {}
+            for rel_id, rel in self.doc.relation.items():
+                arguments = defaultdict(list)
+                for arg in rel.argument:
+                    arguments[arg.role].append(arg.entity_duid)
+
+                if 'Trigger' in arguments:
+                    for trigger in arguments['Trigger']:
+                        trigger_types[trigger] = rel.relation_type
 
             # start_id = 1
             for entity_id, entity in self.doc.entity.items():
@@ -591,6 +627,8 @@ class DocHelper(object):
                 # sid = 'T' + str(start_id)
                 # start_id += 1
                 entity_type = mapping.entity_type_to_str[entity.entity_type]
+                if entity_type == 'Trigger' and entity.duid in trigger_types:
+                    entity_type = trigger_types[entity.duid]
                 entity_text = self.text(entity)
                 line = entity_line.format(entity.duid,
                                           # sid,
@@ -600,8 +638,8 @@ class DocHelper(object):
                                           entity_text)
                 f.write(line)
 
-            event_line = '{0}\t{1}:{2} {3}:{4} {5}:{6}\t{7}\n'
-            rel_line = '{0}\t{1} {2}:{3} {4}:{5}\t{6}\n'
+            event_line = '{0}\t{1}:{2} {3}\t{4}\n'
+            rel_line = '{0}\t{1} {2}\t{3}\n'
             for er_id, event_or_rel in self.doc.relation.items():
                 arguments = defaultdict(list)
                 for arg in event_or_rel.argument:
@@ -612,20 +650,29 @@ class DocHelper(object):
                     attributes[attr.key].append(attr.value)
                 attributes_json = json.dumps(attributes)
 
+                all_args = []
+                for role, args in arguments.items():
+                    if role == 'Trigger':
+                        continue
+                    for arg in args:
+                        one_arg = '{}:{}'.format(role, arg)
+                        all_args.append(one_arg)
+
+                if len(arguments['Trigger']) > 1:
+                    assert len(arguments['Trigger']) == 1
+
                 if event_or_rel.duid.startswith('E'):
                     assert len(arguments['Trigger']) == 1
                     line = event_line.format(event_or_rel.duid,
                                              event_or_rel.relation_type,
                                              arguments['Trigger'][0],
-                                             'Agent', arguments['Agent'][0],
-                                             'Theme', arguments['Theme'][0],
+                                             ' '.join(all_args),
                                              attributes_json)
                     f.write(line)
-                elif event_or_rel.duid.startswith('R'):
+                else:
                     line = rel_line.format(event_or_rel.duid,
                                            event_or_rel.relation_type,
-                                           'Arg1', arguments['Arg1'][0],
-                                           'Arg2', arguments['Arg2'][0],
+                                           ' '.join(all_args),
                                            attributes_json)
                     f.write(line)
 
@@ -644,6 +691,102 @@ class DocHelper(object):
                 base_phrase.append(cst)
 
         return sorted(base_phrase, key=lambda a: a.char_start)
+
+    def get_base_noun_phrase_head(self, constituents, token):
+        # Return token's base NP's head.
+        min_range = float('inf')
+        head = token.index
+        for cst in constituents:
+            if not cst.label.startswith('NP'):
+                continue
+            if cst.token_start <= token.index <= cst.token_end:
+                if cst.token_end - cst.token_start + 1 < min_range:
+                    head = cst.head_token_index
+                    min_range = cst.token_end - cst.token_start + 1
+        return self.doc.token[head]
+
+    def get_max_noun_phrase(self, constituents, token):
+        # Return token's base NP's head.
+        head = token.index
+        basic_cst = None
+        for cst in constituents:
+            if len(cst.children) == 0:
+                # Skip text node.
+                continue
+            if cst.token_start == head == cst.token_end:
+                basic_cst = cst
+
+        if basic_cst is not None:
+            curr = basic_cst
+            while True:
+                if curr.parent == curr.index:
+                    break
+                parent = constituents[curr.parent]
+                if not parent.label.startswith('N') and not parent.label.startswith('J') and not parent.label.startswith('P'):
+                    break
+                curr = parent
+            if curr is not None:
+                return curr
+
+    def get_noun_phrase_head(self, constituents, token):
+        # Return token's largest NP's head.
+        # E.g., full name (short name) cell, cell is the head.
+        min_range = float('inf')
+        min_np = None
+        for cst in constituents:
+            if not cst.label.startswith('NP'):
+                continue
+            if cst.token_start <= token.index <= cst.token_end:
+                if cst.token_end - cst.token_start + 1 < min_range:
+                    min_np = cst
+
+        if min_np is not None:
+            curr_np = min_np
+            max_np = min_np
+            while True:
+                parent = curr_np.parent
+                if parent == 0:
+                    break
+                parent_cp = constituents[parent]
+
+                if (parent_cp.label.startswith('NP') or
+                    parent_cp.label == 'PRN'):
+                    curr_np = parent_cp
+                else:
+                    break
+
+                if parent_cp.label.startswith('NP'):
+                    max_np = parent_cp
+
+            return self.doc.token[max_np.head_token_index]
+
+    def get_noun_phrase_head_by_dependency(self, graph, token, trigger):
+        head = token.index
+        visited = {head}
+        while True:
+            govs = graph.dep_to_gov[head]
+            if len(govs) == 0:
+                break
+
+            should_continue = True
+            for gov, relation in govs:
+                if not self.doc.token[gov].pos.startswith('N'):
+                    should_continue = False
+                if relation == 'root':
+                    should_continue = False
+                if gov == trigger.index:
+                    should_continue = False
+                if gov in visited:
+                    should_continue = False
+                visited.add(gov)
+
+            if not should_continue:
+                break
+
+            for gov, relation in govs:
+                head = gov
+
+        return self.doc.token[head]
 
     def tag_tokens_in_sentence(self, sentence, token1, token2):
         text = self.text(sentence)

@@ -6,9 +6,18 @@ set -e
 # Get path information.
 source "$(dirname $BASH_SOURCE)"/common_path.sh
 
+# Create dependency folder.
+mkdir -p ${DEPENDENCY_PATH}
+
+# Download maven.
+cd ${DEPENDENCY_PATH}
+wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+tar -zxvf ./apache-maven-3.3.9-bin.tar.gz
+mv ./apache-maven-3.3.9 ./apache-maven
+
 # Version numbers of the dependency libraries.
 # Check https://github.com/google/protobuf/releases for correct tag.
-PROTOBUF_VERSION="v3.0.0"
+PROTOBUF_VERSION="v3.0.2"
 # Check https://github.com/grpc/grpc/releases for correct tag.
 GRPC_VERSION="v1.0.0"
 # Check https://github.com/grpc/grpc-java/releases for correct tag.
@@ -38,22 +47,6 @@ git checkout tags/${GRPC_JAVA_VERSION}
 # Make protobuf.
 # Generate configuration files
 cd ${DEPENDENCY_PATH}/protobuf
-
-# Check that gmock is present. Usually it is already there since the directory
-# is set up as an SVN external. This is copied from the master branch of
-# protocol buffer as it's not released yet.
-if test ! -e gmock; then
-  echo "Google Mock not present.  Fetching gmock-1.7.0 from the web..."
-  curl -L -O https://github.com/google/googlemock/archive/release-1.7.0.zip
-  unzip -q release-1.7.0.zip
-  rm release-1.7.0.zip
-  mv googlemock-release-1.7.0 gmock
-
-  curl -L -O https://github.com/google/googletest/archive/release-1.7.0.zip
-  unzip -q release-1.7.0.zip
-  rm release-1.7.0.zip
-  mv googletest-release-1.7.0 gmock/gtest
-fi
 
 ./autogen.sh
 ./configure

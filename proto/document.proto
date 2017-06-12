@@ -55,6 +55,9 @@ message Sentence {
 		int32 index = 2;
 	}
 	repeated TokenExtra token_extra = 8;
+
+	int32 char_start = 9;
+	int32 char_end = 10;
 }
 
 message Entity {
@@ -75,6 +78,7 @@ message Entity {
 		MUTATION = 8;
 		SUBCELLULAR_LOCATION = 9;
 		TRIGGER = 10;
+		TITLE = 11;
 	}
 	EntityType entity_type = 6;
 	message EntityId {
@@ -83,6 +87,7 @@ message Entity {
 	}
 	repeated EntityId entity_id = 7;
 	int32 sentence_index = 8;
+	string source = 9;
 }
 
 message Relation {
