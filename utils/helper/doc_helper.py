@@ -465,7 +465,7 @@ class DocHelper(object):
             'relations': relations
         }
 
-    def dependencpy_extra_for_brat(self, sentence):
+    def dependency_extra_for_brat(self, sentence):
         count = 1
         entities = []
         sent_text = self.text(sentence)
