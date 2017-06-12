@@ -8,7 +8,7 @@ import shortuuid
 from ..brat import parser, mapping
 from collections import defaultdict, namedtuple
 import glog
-
+import re
 
 class DocHelper(object):
     def __init__(self, doc):
@@ -55,12 +55,38 @@ class DocHelper(object):
         childConst = constituent
         constituent = sentence.constituent[parentConstIndex]
         label = constituent.label
-        while (label == "NP" or label == "NN" or label == "NNS"):
+        vp_labels = ["VP", "ADVP", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
+        np_labels = ["NN", "NP", "NNS", "FW"]
+        isVP = 0
+        constituentLabelsToCheck = np_labels
+        if label in vp_labels:
+            isVP = 1
+            constituentLabelsToCheck = vp_labels
+        while (label in constituentLabelsToCheck):
             # if label == "NP":
             # return constituent.index
             crossedCC = self.constituentContainsCC(sentence, constituent.index)
             if crossedCC == 1:
                 return childConst.index
+            constituentIndex = constituent.index
+            parentConstIndex = constituent.parent
+            childConst = constituent
+            constituent = sentence.constituent[parentConstIndex]
+            label = constituent.label
+        return childConst.index
+    
+    def getParentVPIndexFromLeafTokenIndex(self, sentence, index):
+        constituentIndex = self.getConstituentIndexFromTokenIndex(sentence,
+                                                                  index)
+        constituent = sentence.constituent[constituentIndex]
+        parentConstIndex = constituent.parent
+        childConst = constituent
+        constituent = sentence.constituent[parentConstIndex]
+        label = constituent.label
+        vp_labels = ["VP", "ADVP", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
+        while (label in vp_labels):
+            # if label == "NP":
+            # return constituent.index
             constituentIndex = constituent.index
             parentConstIndex = constituent.parent
             childConst = constituent
@@ -86,7 +112,7 @@ class DocHelper(object):
         parentConstIndex = constituent.parent
         constituent = sentence.constituent[parentConstIndex]
         label = constituent.label
-        while (label == "NP" or label == "NN" or label == "NNS"):
+        while (label == "NP" or label == "NN" or label == "NNS" or label == "FW"):
             if label == "NP":
                 return constituent.index
             constituentIndex = constituent.index
@@ -108,26 +134,58 @@ class DocHelper(object):
                                                                    govIndex)
         depParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,
                                                                    depIndex)
+
+            
         govParentNP = self.printConstituent(sentence, govParentNPIndex)
         depParentNP = self.printConstituent(sentence, depParentNPIndex)
 
         return "Rule ID: " + ruleID + "\nGov: " + govNode + "\t" + govParentNP + "\nRelEdge: " + relation + "\nDep: " + depNode + "\t" + depParentNP + "\n";
 
+    def printEmptyExtraDependencyAnalysis(self, sentence):
+        return "NA" + "\t" + "NA" + "\t" + "-1" + "\t" + "NA" + "\t" + "NA" + "\t" \
+                                        + "-1" + "\t" + "NA" + "\t" + "NA" 
     def printExtraDependencyAnalysis(self, sentence, depExtra):
         govIndex = depExtra.gov_index
         depIndex = depExtra.dep_index
         relation = depExtra.relation
         ruleID = depExtra.rule_id
-
+       
+        text = self.text(sentence)
         govNode = self.doc.token[govIndex]
         depNode = self.doc.token[depIndex]
         govNodePos = govNode.pos
         depNodePos = depNode.pos
         govNodeWord = govNode.word
         depNodeWord = depNode.word
+        govParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,
+                                                                   govIndex)
+        depParentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence,
+                                                                   depIndex)
+        if relation == "member_collection":
+            govParentNPIndex = self.getParentNPIndexFromLeafTokenIndex1(sentence,
+                                                                   govIndex)
+        govParentNP = self.printConstituentTokens(sentence, govParentNPIndex)
+        depParentNP = self.printConstituentTokens(sentence, depParentNPIndex)
         sentenceTagged = self.tag_tokens_in_sentence(sentence, govNode, depNode)
-        return ruleID + "\t" + govNodePos + "\t" + depNodePos + "\t" + govNodeWord + "\t" + depNodeWord + "\t" + relation + "\t" + sentenceTagged
+        return ruleID + "\t" + relation + "\t" + str(govIndex) + "\t" + govNodeWord + "\t" + govParentNP.strip()+ "\t" \
+                                        + str(depIndex) + "\t" + depNodeWord + "\t" + depParentNP.strip()
 
+
+    def getTokenBaseNP(self, sentence, token_index):
+        base_parentNPIndex = self.getParentNPIndexFromLeafTokenIndex1(sentence, token_index)
+        base_parentNP = self.printConstituentTokens(sentence, base_parentNPIndex)
+        return base_parentNP.strip()
+    
+    def getTokenNP(self, sentence, token_index):
+        parentNPIndex = self.getParentNPIndexFromLeafTokenIndex(sentence, token_index)
+        parentNP = self.printConstituentTokens(sentence, parentNPIndex)
+        return parentNP.strip()
+
+    def getTokenVG(self, sentence, token_index):
+        parentVPIndex = self.getParentVPIndexFromLeafTokenIndex(sentence, token_index)
+        parentVG = self.printConstituentTokens(sentence, parentVPIndex)
+        return parentVG.strip()
+    
     def printConstituent(self, sentence, constituentIndex):
         constituent = sentence.constituent[constituentIndex]
         label = constituent.label
@@ -143,6 +201,27 @@ class DocHelper(object):
                 returnStr = returnStr + self.printConstituent(sentence,
                                                               children)
             returnStr = returnStr + " )"
+            return returnStr
+
+    def printConstituentTokens(self, sentence, constituentIndex):
+        isVP = 0
+        constituent = sentence.constituent[constituentIndex]
+        label = constituent.label
+        childrens = constituent.children
+        if label == "VP":
+            isVP = 1
+        if not childrens:
+            returnStr = " " + label
+            return returnStr
+        else:
+            returnStr = "";
+            for children in childrens:
+                childLabel = sentence.constituent[children].label
+                if isVP == 1 and (childLabel == "NP" or childLabel == "PP"):
+                    returnStr = returnStr + self.printConstituentTokens(sentence,children)
+                    #returnStr = returnStr
+                else:
+                    returnStr = returnStr + self.printConstituentTokens(sentence,children)
             return returnStr
 
     def token(self, proto_obj):
@@ -333,11 +412,22 @@ class DocHelper(object):
         count = 1
         relations = []
         for dep_relation in sentence.dependency:
+            #if re.search(r'root',dep_relation.relation):
+            #    continue
+            if re.search(r'_opn',dep_relation.relation):
+                continue
+            if re.search(r'arg',dep_relation.relation):
+                continue
+            if re.search(r'is_a',dep_relation.relation):
+                continue
+            if re.search(r'added',dep_relation.relation):
+                continue
+            if re.search(r'_null',dep_relation.relation):
+                continue
             rid = 'R' + str(count)
             dep = dep_relation.dep_index
             gov = dep_relation.gov_index
             relation = dep_relation.relation
-
             dep_tid = index2tid[dep]
             gov_tid = index2tid[gov]
             relations.append([rid, relation, [['Governer', gov_tid],
@@ -365,7 +455,15 @@ class DocHelper(object):
 
         count = 1
         relations = []
+        duplicateCheckSet = dict()
         for dep_relation in sentence.dependency_extra:
+            if re.search(r'_opn',dep_relation.relation):
+                continue
+            duplicateCheckKey = str(dep_relation.dep_index)+":"+str(dep_relation.gov_index)+":"+dep_relation.relation
+            if duplicateCheckKey in duplicateCheckSet:
+                continue
+            else:
+                duplicateCheckSet[duplicateCheckKey] = 1
             rid = 'R' + str(count)
             dep = dep_relation.dep_index
             gov = dep_relation.gov_index
