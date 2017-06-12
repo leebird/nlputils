@@ -48,12 +48,15 @@ def split_using_stanford(doc):
     return process_one_document(request)
 
 def run():
+    textFH = open(sys.argv[1],"r")
+    text = textFH.read()
+    textFH.close()
     #text = u'Surface expression of mir-21 activates tgif beta receptor type II expression. Expression of mir-21 and mir-132  directly mediates cell migration . mir-21 mediates cell migration and proliferation. mir-21 seems to mediate apoptosis. mir-21 is  involved in cellular processes, such as cell migration and cell proliferation. mir-21 regulates the ectopic expression of smad2 .'
-    text = u'transport of annexin 2 not only to dynamic actin-rich ruffles at the cell cortex but also to cytoplasmic and perinuclear vesicles.'
+    #text = u'transport of annexin 2 not only to dynamic actin-rich ruffles at the cell cortex but also to cytoplasmic and perinuclear vesicles.'
     doc_id = '99999999'
-    rule_phase0_filename = sys.argv[1]
-    rule_phase1_filename = sys.argv[2]
-    rule_phase2_filename = sys.argv[3]
+    rule_phase0_filename = sys.argv[2]
+    rule_phase1_filename = sys.argv[3]
+    rule_phase2_filename = sys.argv[4]
     fh0 = open(rule_phase0_filename, "r")
     rule0_lines = fh0.readlines()
     fh0.close()
