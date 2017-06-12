@@ -73,7 +73,7 @@ def get_brat_data(parsed_doc):
     # Support multiple sentences.
     brat_sentences = {}
     for sentence in parsed_doc.sentence:
-        brat_data = helper.dependencpy_for_brat(sentence)
+        brat_data = helper.dependency_for_brat(sentence)
         brat_sentences[sentence.index] = brat_data
     return brat_sentences
 
@@ -84,7 +84,7 @@ def get_brat_data_added(parsed_doc):
     # Support multiple sentences.
     brat_sentences = {}
     for sentence in parsed_doc.sentence:
-        brat_data = helper.dependencpy_extra_for_brat(sentence)
+        brat_data = helper.dependency_extra_for_brat(sentence)
         brat_sentences[sentence.index] = brat_data
     return brat_sentences
 
