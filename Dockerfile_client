@@ -1,0 +1,28 @@
+FROM ubuntu:16.04
+MAINTAINER Gang Li <leemagpie@gmail.com>
+
+# A python-based small image for calling nlputils.
+# You should have nlputils running and accessible
+# by this image.
+
+# Run as:
+# docker run --network=host leebird/nlputils_client
+
+RUN apt update && apt upgrade -y
+RUN apt install build-essential -y
+RUN apt install python python-pip -y
+RUN apt install unzip autoconf m4 libtool git -y
+
+RUN pip install --upgrade pip
+RUN pip install protobuf==3.02
+RUN pip install grpcio==1.0.0
+RUN pip install git+https://github.com/leebird/glog
+
+RUN mkdir /nlputils
+COPY utils /nlputils/utils
+COPY protolib /nlputils/protolib
+COPY test /nlputils/test
+
+ENV PYTHONPATH /nlputils
+
+CMD ["python", "/nlputils/test/example.py"]
