@@ -4,3 +4,4 @@ dep
 env
 backup
 server/nlpserver/lib
+server/bllip/model

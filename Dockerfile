@@ -38,11 +38,15 @@ COPY proto /nlputils/proto
 COPY protolib /nlputils/protolib
 RUN . /nlputils/scripts/export_path.sh && cd /nlputils/ && bash scripts/compile_document_proto.sh
 
-COPY server /nlputils/server
+COPY server/bllip /nlputils/server/bllip
+COPY server/nlpserver /nlputils/server/nlpserver
 COPY utils /nlputils/utils
 COPY visual /nlputils/visual
 COPY test /nlputils/test
+
+# Init modules.
 RUN cd /nlputils/server/nlpserver/ && sh init.sh
+RUN cd /nlputils/server/bllip && python init.py
 RUN cd /nlputils/visual && sh init.sh
 
 COPY docker/supervisord.conf /etc/supervisord.conf
