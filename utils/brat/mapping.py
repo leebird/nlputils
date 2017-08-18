@@ -7,7 +7,9 @@ entity_type_to_str = {
     document_pb2.Entity.SUBCELLULAR_LOCATION: 'Subcellular_location',
     document_pb2.Entity.UNDEFINED_TYPE: 'Entity',
     document_pb2.Entity.SITE: 'Site',
-    # document_pb2.Entity.DISEASE: 'Sentence'
+    document_pb2.Entity.DISEASE: 'Disease',
+    document_pb2.Entity.CHEMICAL: 'Chemical',
+    document_pb2.Entity.SPECIES: 'Species',
 }
 
 str_to_entity_type = {

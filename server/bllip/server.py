@@ -3,11 +3,12 @@ import time
 from bllip_process_pool import BllipManager
 from protolib.python import rpc_pb2
 import glog
+import sys
 
 
 class BllipServicer(rpc_pb2.BetaBllipParserServicer):
-    def __init__(self):
-        self.pool_size = 15
+    def __init__(self, pool_size=1):
+        self.pool_size = pool_size
         glog.info('Waiting for BLLIP manager init...')
         self.manager = BllipManager(self.pool_size)
         glog.info('BLLIP manager inited')
@@ -22,9 +23,9 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
         return response
 
 
-def serve():
+def serve(pool_size=1):
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(),
+    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(pool_size),
                                                     pool_size=10,
                                                     default_timeout=600)
     server.add_insecure_port('[::]:8901')
@@ -37,6 +38,10 @@ def serve():
          
 if __name__ == '__main__':
     glog.setLevel(glog.DEBUG)
-    serve()
+    try:
+        pool_size = int(sys.argv[2])
+    except:
+        pool_size = 1
+    serve(pool_size)
 
 

@@ -10,6 +10,6 @@ cd ${DEPENDENCY_PATH}
 rm -rf ./*
 
 # Uninstall Python modules.
-pip uninstall protobuf
-pip uninstall grpcio
-pip uninstall glog
+pip uninstall -y protobuf
+pip uninstall -y grpcio
+pip uninstall -y glog

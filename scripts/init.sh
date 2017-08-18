@@ -4,22 +4,23 @@
 set -e
 
 # Get path information.
-source "$(dirname $BASH_SOURCE)"/common_path.sh
+source "$(dirname ${BASH_SOURCE})"/common_path.sh
 
 # Create dependency folder.
 mkdir -p ${DEPENDENCY_PATH}
 
 # Download maven.
-cd ${DEPENDENCY_PATH}
-wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar -zxvf ./apache-maven-3.3.9-bin.tar.gz
-mv ./apache-maven-3.3.9 ./apache-maven
+#cd ${DEPENDENCY_PATH}
+#wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+#tar -zxvf ./apache-maven-3.3.9-bin.tar.gz
+#mv ./apache-maven-3.3.9 ./apache-maven
 
 # Version numbers of the dependency libraries.
 # Check https://github.com/google/protobuf/releases for correct tag.
 PROTOBUF_VERSION="v3.0.2"
 # Check https://github.com/grpc/grpc/releases for correct tag.
 GRPC_VERSION="v1.0.0"
+GRPC_PY_VERSION='1.0.0'
 # Check https://github.com/grpc/grpc-java/releases for correct tag.
 GRPC_JAVA_VERSION="v1.0.0"
 
@@ -81,7 +82,7 @@ python setup.py install --cpp_implementation
 # Some instructions: https://github.com/grpc/grpc/blob/master/INSTALL
 # Not very clear.
 cd ${ROOT_PATH}
-pip install grpcio
+pip install "grpcio==${GRPC_PY_VERSION}"
 
 # Grpc java library compiler.
 # Here we only build the compiler, the libarary jar file can be downloaded
