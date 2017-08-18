@@ -3,3 +3,4 @@ dep
 .git
 env
 backup
+server/nlpserver/lib

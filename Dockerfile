@@ -27,18 +27,21 @@ RUN pip install --upgrade pip
 RUN mkdir /nlputils
 
 # Separate copy for better caching.
+COPY scripts /nlputils/scripts
+
+# We need bash to initialize nlputils.
+# These take a long time, run them first.
+RUN ln -snf /bin/bash /bin/sh
+RUN . /nlputils/scripts/export_path.sh && cd /nlputils/ && bash scripts/init.sh
+
 COPY proto /nlputils/proto
 COPY protolib /nlputils/protolib
+RUN . /nlputils/scripts/export_path.sh && cd /nlputils/ && bash scripts/compile_document_proto.sh
+
 COPY server /nlputils/server
 COPY utils /nlputils/utils
 COPY visual /nlputils/visual
 COPY test /nlputils/test
-COPY scripts /nlputils/scripts
-
-# We need bash to initialize nlputils.
-RUN ln -snf /bin/bash /bin/sh
-RUN . /nlputils/scripts/export_path.sh && cd /nlputils/ && bash scripts/init.sh
-RUN . /nlputils/scripts/export_path.sh && cd /nlputils/ && bash scripts/compile_document_proto.sh
 RUN cd /nlputils/server/nlpserver/ && sh init.sh
 RUN cd /nlputils/visual && sh init.sh
 

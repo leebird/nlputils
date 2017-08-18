@@ -39,7 +39,7 @@ def serve(pool_size=1):
 if __name__ == '__main__':
     glog.setLevel(glog.DEBUG)
     try:
-        pool_size = int(sys.argv[2])
+        pool_size = int(sys.argv[1])
     except:
         pool_size = 1
     serve(pool_size)
