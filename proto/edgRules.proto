@@ -21,6 +21,7 @@ message Rule {
 		PHASE_2 = 2;
 	}
 	RulePhase rule_phase = 4;
+	repeated string family = 5;
 }
 
 message EdgRules {
