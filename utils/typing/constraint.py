@@ -15,7 +15,7 @@ from utils.param_helper import ParamHelper
 from utils.brat.mapping import entity_type_to_str
 
 
-def constraint(helper, arg_regex, entity_type):
+def constraint(helper, arg_regex, entity_types):
     doc = helper.doc
     token_to_entity = defaultdict(set)
 
@@ -26,24 +26,37 @@ def constraint(helper, arg_regex, entity_type):
 
     arg_pattern = re.compile(arg_regex)
 
-    valid_deps = []
+    invalid_deps = set()
     for sent in doc.sentence:
         # print(helper.text(sent))
-        valid_dependency = []
         for did, dep in enumerate(sent.dependency_extra):
-            if arg_pattern.match(dep.relation):
+            if (dep.relation.startswith(arg_regex) or 
+                arg_pattern.match(dep.relation)):
                 dep_token = doc.token[dep.dep_index]
                 gov_token = doc.token[dep.gov_index]
-                if entity_type not in token_to_entity[dep_token.index]:
-                    continue
+                correct_type = False
+                for ttype in entity_types:
+                    if ttype in token_to_entity[dep_token.index]:
+                        correct_type = True
+                        break
+                if not correct_type:
+                    invalid_deps.add((sent.index, did))
                 # print('RE: ', gov_token.word, dep.relation, dep_token.word)
             # valid_dependency.append(dep)
-            valid_dependency.append(did)
         # del sent.dependency_extra[:]
         # sent.dependency_extra.extend(valid_dependency)
-        valid_deps.append(valid_dependency)
+
     # return valid deps for each sentence.
-    return valid_deps
+    return invalid_deps
+
+
+def constraint_args(helper, constraints):
+    invalid_deps = set()
+    for arg, cons in constraints.items():
+        res = constraint(helper, arg, cons)
+        invalid_deps |= res
+    return invalid_deps
+
 
 def edg_process_one_document(request):
     # Use biotm2 as server.

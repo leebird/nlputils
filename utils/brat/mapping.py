@@ -10,6 +10,7 @@ entity_type_to_str = {
     document_pb2.Entity.DISEASE: 'Disease',
     document_pb2.Entity.CHEMICAL: 'Chemical',
     document_pb2.Entity.SPECIES: 'Species',
+    document_pb2.Entity.MUTATION: 'Mutation',
 }
 
 str_to_entity_type = {
@@ -33,5 +34,7 @@ str_to_entity_type = {
     'phosphorylation': document_pb2.Entity.TRIGGER,
     'subcellular_location': document_pb2.Entity.SUBCELLULAR_LOCATION,
     'entity': document_pb2.Entity.UNDEFINED_TYPE,
+    # PubTator
+    'chemical': document_pb2.Entity.CHEMICAL,
     # 'Sentence': document_pb2.Entity.DISEASE
 }
