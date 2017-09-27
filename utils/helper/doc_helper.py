@@ -619,14 +619,10 @@ class DocHelper(object):
 
             # start_id = 1
             for entity_id, entity in self.doc.entity.items():
-                if entity.entity_type not in mapping.entity_type_to_str:
-                    glog.warning('Skip entity not in mapping: {0}'.format(
-                        entity.entity_type))
-                    continue
                 # Note that the entity id may not be of brat format, e.g., T1.
                 # sid = 'T' + str(start_id)
                 # start_id += 1
-                entity_type = mapping.entity_type_to_str[entity.entity_type]
+                entity_type = document_pb2.Entity.EntityType.Name(entity.entity_type)
                 if entity_type == 'Trigger' and entity.duid in trigger_types:
                     entity_type = trigger_types[entity.duid]
                 entity_text = self.text(entity)
@@ -809,11 +805,11 @@ class DocHelper(object):
     def naive_tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
             return '</{0}>'.format(
-                mapping.entity_type_to_str[entity.entity_type])
+                document_pb2.Entity.EntityType.Name(entity.entity_type))
 
         def open_tag(entity):
             return '<{0}>'.format(
-                mapping.entity_type_to_str[entity.entity_type])
+                document_pb2.Entity.EntityType.Name(entity.entity_type))
 
         text = self.text(sentence)
         slices = []
@@ -836,9 +832,9 @@ class DocHelper(object):
         def get_tag(entity, sentence):
             char_start, char_end = self.char_range_in_sentence(entity, sentence)
             # Note char_end is offset of the last character of the entity.
-            open_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+            open_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
                            char_start, char_end + 1, 'open')
-            close_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+            close_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
                             char_start, char_end + 1, 'close')
             return open_tag, close_tag
 
@@ -859,9 +855,9 @@ class DocHelper(object):
 
         def get_tag(entity):
             # Note char_end is offset of the last character of the entity.
-            open_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+            open_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
                            entity.char_start, entity.char_end + 1, 'open')
-            close_tag = Tag(mapping.entity_type_to_str[entity.entity_type],
+            close_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
                             entity.char_start, entity.char_end + 1, 'close')
             return open_tag, close_tag
 
@@ -967,8 +963,7 @@ class DocHelper(object):
             if exclude_type is not None and entity.entity_type in exclude_type:
                 slices.append(self.text(entity))
             else:
-                entity_type = mapping.entity_type_to_str[
-                    entity.entity_type].upper()
+                entity_type = document_pb2.Entity.EntityType.Name(entity.entity_type)
                 slices.append(entity_type)
 
             entity_end = entity.char_end

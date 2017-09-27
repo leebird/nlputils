@@ -1,8 +1,10 @@
 from protolib.python import document_pb2
 
+# Should not use this mapping any more.
+# Use enum -> string method in protobuf directly.
 entity_type_to_str = {
-    document_pb2.Entity.MIRNA: 'MiRNA',
-    document_pb2.Entity.GENE: 'Gene',
+    document_pb2.Entity.MIRNA: 'MIRNA',
+    document_pb2.Entity.GENE: 'GENE',
     document_pb2.Entity.TRIGGER: 'Trigger',
     document_pb2.Entity.SUBCELLULAR_LOCATION: 'Subcellular_location',
     document_pb2.Entity.UNDEFINED_TYPE: 'Entity',
