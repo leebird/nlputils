@@ -4,21 +4,23 @@ from collections import defaultdict
 from enum import Enum
 
 
-_NP_EDGES = {'compound'}
+# Ex.: BAD expression, expression of BAD.
+_NP_EDGES = {'compound', 'nmod:of'}
 
 
 class HeadType(Enum):
     EXPRESSION = 1
     PROTEIN = 2
     PROTEIN_PART = 3
-    OTHER = 10
+    BIO_OTHER = 10
+    OTHER = 11
 
 
 _HEADS = {
     HeadType.EXPRESSION: {'expression', 'level'},
     HeadType.PROTEIN: {'gene', 'protein', 'complex', 'kinase'},
     HeadType.PROTEIN_PART: {'domain', 'component', 'subunit'},
-    HeadType.OTHER: {'sequence', 'member', 'dimer', 'trimer', 'proteasome'}
+    HeadType.BIO_OTHER: {'sequence', 'member', 'dimer', 'trimer', 'proteasome'},
 }
 
 
@@ -79,11 +81,13 @@ def propagate(helper, constraints, invalid_edges):
 
             if len(token_typings & arg_types) > 0:
                 added_edges.add(
-                    (sent_id, dep.gov_index, dep.relation + '_np', token.index))
+                    (sent_id, dep.rule_id, dep.gov_index, 
+                     dep.relation + '_np', token.index))
 
     print(added_edges)
-    for sent_id, gov_index, relation, dep_index in added_edges:
+    for sent_id, rule_id, gov_index, relation, dep_index in added_edges:
         edge = helper.doc.sentence[sent_id].dependency_extra.add()
         edge.gov_index = gov_index
         edge.dep_index = dep_index
         edge.relation = relation
+        edge.rule_id = rule_id
