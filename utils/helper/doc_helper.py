@@ -6,7 +6,7 @@ import shortuuid
 import glog
 import re
 from protolib.python import document_pb2
-from ..brat import parser, mapping
+from ..brat import parser
 from .range_helper import RangeHelper
 
 class DocHelper(object):
@@ -537,16 +537,11 @@ class DocHelper(object):
                 if line[0] == 'T':
                     entity_id, entity_text, entity_type, entity_start, entity_end \
                         = parser.parse_entity(line)
-                    entity_type = entity_type.lower()
-                    if entity_type not in mapping.str_to_entity_type:
-                        # Only consider entity types in mapping.
-                        glog.warning(
-                            'Skip entity type: {0}'.format(entity_type))
-                        continue
+
                     entity = helper.add_entity(duid=entity_id)
                     entity.char_start = entity_start
                     entity.char_end = entity_end - 1
-                    entity.entity_type = mapping.str_to_entity_type[entity_type]
+                    entity.entity_type = entity_type
 
                 elif line[0] == 'E':
                     events.append(parser.parse_event(line))

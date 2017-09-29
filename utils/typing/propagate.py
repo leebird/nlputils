@@ -2,6 +2,7 @@
 from __future__ import print_function
 from collections import defaultdict
 from enum import Enum
+from protolib.python import document_pb2
 
 
 # Ex.: BAD expression, expression of BAD.
@@ -52,9 +53,9 @@ def propagate(helper, constraints, invalid_edges):
     if _SELECTED_HEADS is None:
         _SELECTED_HEADS = make_head_words()
 
+    added_edges = set()
     doc = helper.doc
     token_to_entity = defaultdict(set)
-    added_edges = set()
 
     for entity in doc.entity.values():
         # token_type = entity_type_to_str[entity.entity_type]
@@ -84,7 +85,44 @@ def propagate(helper, constraints, invalid_edges):
                     (sent_id, dep.rule_id, dep.gov_index, 
                      dep.relation + '_np', token.index))
 
-    print(added_edges)
+    for sent_id, rule_id, gov_index, relation, dep_index in added_edges:
+        edge = helper.doc.sentence[sent_id].dependency_extra.add()
+        edge.gov_index = gov_index
+        edge.dep_index = dep_index
+        edge.relation = relation
+        edge.rule_id = rule_id
+
+
+# Maybe just use stanford semgrex to implement this rule.
+def special_propagate(helper):
+    token_to_entity = defaultdict(set)
+
+    for entity in helper.doc.entity.values():
+        # token_type = entity_type_to_str[entity.entity_type]
+        for i in range(entity.token_start, entity.token_end + 1):
+            token_to_entity[i].add(entity.entity_type)
+
+    added_edges = set()
+    for sent in helper.doc.sentence:
+        for token in helper.token(sent):
+            token_types = token_to_entity[token.index]
+
+            if 'SITE' not in token_types:
+                continue
+
+            for dep in sent.dependency:
+                if dep.gov_index != token.index:
+                    continue
+                if not dep.relation == 'nmod:of':
+                    continue
+
+                gene_types = token_to_entity[dep.dep_index]
+                if 'GENE' not in gene_types:
+                    continue
+                added_edges.add(
+                    (sent.index, 'site_at_gene', dep.gov_index,
+                     'part_of', dep.dep_index))
+
     for sent_id, rule_id, gov_index, relation, dep_index in added_edges:
         edge = helper.doc.sentence[sent_id].dependency_extra.add()
         edge.gov_index = gov_index
