@@ -622,8 +622,8 @@ class DocHelper(object):
                 # Note that the entity id may not be of brat format, e.g., T1.
                 # sid = 'T' + str(start_id)
                 # start_id += 1
-                entity_type = document_pb2.Entity.EntityType.Name(entity.entity_type)
-                if entity_type == 'Trigger' and entity.duid in trigger_types:
+                entity_type = entity.entity_type
+                if entity_type == 'TRIGGER' and entity.duid in trigger_types:
                     entity_type = trigger_types[entity.duid]
                 entity_text = self.text(entity)
                 line = entity_line.format(entity.duid,
@@ -804,12 +804,10 @@ class DocHelper(object):
 
     def naive_tag_entity_in_sentence(self, sentence, entities):
         def close_tag(entity):
-            return '</{0}>'.format(
-                document_pb2.Entity.EntityType.Name(entity.entity_type))
+            return '</{0}>'.format(entity.entity_type)
 
         def open_tag(entity):
-            return '<{0}>'.format(
-                document_pb2.Entity.EntityType.Name(entity.entity_type))
+            return '<{0}>'.format(entity.entity_type)
 
         text = self.text(sentence)
         slices = []
@@ -832,10 +830,8 @@ class DocHelper(object):
         def get_tag(entity, sentence):
             char_start, char_end = self.char_range_in_sentence(entity, sentence)
             # Note char_end is offset of the last character of the entity.
-            open_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
-                           char_start, char_end + 1, 'open')
-            close_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
-                            char_start, char_end + 1, 'close')
+            open_tag = Tag(entity.entity_type, char_start, char_end + 1, 'open')
+            close_tag = Tag(entity.entity_type, char_start, char_end + 1, 'close')
             return open_tag, close_tag
 
         text = self.text(sentence)
@@ -855,10 +851,8 @@ class DocHelper(object):
 
         def get_tag(entity):
             # Note char_end is offset of the last character of the entity.
-            open_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
-                           entity.char_start, entity.char_end + 1, 'open')
-            close_tag = Tag(document_pb2.Entity.EntityType.Name(entity.entity_type),
-                            entity.char_start, entity.char_end + 1, 'close')
+            open_tag = Tag(entity.entity_type, entity.char_start, entity.char_end + 1, 'open')
+            close_tag = Tag(entity.entity_type, entity.char_start, entity.char_end + 1, 'close')
             return open_tag, close_tag
 
         tags = []
@@ -963,8 +957,7 @@ class DocHelper(object):
             if exclude_type is not None and entity.entity_type in exclude_type:
                 slices.append(self.text(entity))
             else:
-                entity_type = document_pb2.Entity.EntityType.Name(entity.entity_type)
-                slices.append(entity_type)
+                slices.append(entity.entity_type)
 
             entity_end = entity.char_end
             entity.char_start = mask_start

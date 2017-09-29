@@ -66,21 +66,22 @@ message Entity {
 	int32 char_end = 3;
 	int32 token_start = 4;
 	int32 token_end = 5;
-	enum EntityType {
-		UNDEFINED_TYPE = 0;  // This would be the default value.
-		GENE = 1;
-		MIRNA = 2;
-		DISEASE = 3;
-		CHEMICAL = 4;
-		DRUG = 5;
-		SPECIES = 6;
-		SITE = 7;
-		MUTATION = 8;
-		SUBCELLULAR_LOCATION = 9;
-		TRIGGER = 10;
-		TITLE = 11;
-	}
-	EntityType entity_type = 6;
+//	enum EntityType {
+//		UNDEFINED_TYPE = 0;  // This would be the default value.
+//		GENE = 1;
+//		MIRNA = 2;
+//		DISEASE = 3;
+//		CHEMICAL = 4;
+//		DRUG = 5;
+//		SPECIES = 6;
+//		SITE = 7;
+//		MUTATION = 8;
+//		SUBCELLULAR_LOCATION = 9;
+//		TRIGGER = 10;
+//		TITLE = 11;
+//	}
+//	EntityType entity_type = 6;
+	string entity_type = 6;
 	message EntityId {
 		string source = 1;
 		string id_string = 2;
