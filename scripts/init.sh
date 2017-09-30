@@ -48,8 +48,8 @@ git checkout tags/${GRPC_JAVA_VERSION}
 # Install Python modules. First update pip.
 pip install -U pip
 
- Make protobuf.
- Generate configuration files
+# Make protobuf.
+# Generate configuration files
 cd ${DEPENDENCY_PATH}/protobuf
 
 ./autogen.sh
