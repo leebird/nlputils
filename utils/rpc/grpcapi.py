@@ -3,9 +3,9 @@ from __future__ import unicode_literals, print_function
 import multiprocessing as mp
 import threading
 import glog
-from grpc.beta import implementations
+import grpc
 from grpc.framework.interfaces.face.face import ExpirationError
-from protolib.python import rpc_pb2
+from protolib.python import rpc_pb2_grpc, rpc_pb2
 
 
 class GrpcInterface(object):
@@ -15,10 +15,8 @@ class GrpcInterface(object):
         self.timeout_seconds = timeout_seconds
         self.thread_pool_size = thread_pool_size
         self.host = host
-        self.channel = implementations.insecure_channel(self.host, self.port)
-        self.stub = rpc_pb2.beta_create_NlpService_stub(
-                self.channel,
-                pool_size=self.thread_pool_size)
+        self.channel = grpc.insecure_channel('{}:{}'.format(self.host, self.port))
+        self.stub = rpc_pb2_grpc.NlpServiceStub(self.channel)
         
     def process_document(self, request):
         try:
@@ -26,14 +24,12 @@ class GrpcInterface(object):
         except ExpirationError:
             msg = 'Expiration:' + ','.join([d.doc_id for d in request.document])
             glog.warning(msg)
-            return rpc_pb2.Response()
 
     def edg_process_document(self, request):
         try:
             return self.stub.EdgProcessDocument(request, self.timeout_seconds)
         except ExpirationError:
             glog.warning('Expiration:' + '\t' + ','.join([d.doc_id for d in request.document]))
-            return rpc_pb2.Response()
 
 
 def _request_processor(interface, inqueue, dequeue):

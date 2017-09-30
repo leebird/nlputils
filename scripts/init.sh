@@ -17,12 +17,12 @@ mkdir -p ${DEPENDENCY_PATH}
 
 # Version numbers of the dependency libraries.
 # Check https://github.com/google/protobuf/releases for correct tag.
-PROTOBUF_VERSION="v3.0.2"
+PROTOBUF_VERSION="v3.4.1"
 # Check https://github.com/grpc/grpc/releases for correct tag.
-GRPC_VERSION="v1.0.0"
-GRPC_PY_VERSION='1.0.0'
+GRPC_VERSION="v1.6.3"
+GRPC_PY_VERSION='1.6.3'
 # Check https://github.com/grpc/grpc-java/releases for correct tag.
-GRPC_JAVA_VERSION="v1.0.0"
+GRPC_JAVA_VERSION="v1.6.1"
 
 # Download packages from Github.
 # https://github.com/google/protobuf/releases
@@ -45,8 +45,11 @@ git clone https://github.com/grpc/grpc-java
 cd grpc-java
 git checkout tags/${GRPC_JAVA_VERSION}
 
-# Make protobuf.
-# Generate configuration files
+# Install Python modules. First update pip.
+pip install -U pip
+
+ Make protobuf.
+ Generate configuration files
 cd ${DEPENDENCY_PATH}/protobuf
 
 ./autogen.sh
@@ -59,13 +62,6 @@ cd java
 mvn test
 mvn package
 
-# Make grpc.
-cd ${DEPENDENCY_PATH}/grpc
-make
-
-# Install Python modules. First update pip.
-pip install -U pip
-
 # Protobuf Python module.
 # Use the C++ backend for serialization. Pure
 # python serialization is very slow.
@@ -76,6 +72,10 @@ cd ${DEPENDENCY_PATH}/protobuf/python
 python setup.py build --cpp_implementation
 python setup.py test --cpp_implementation
 python setup.py install --cpp_implementation
+
+# Make grpc.
+cd ${DEPENDENCY_PATH}/grpc
+make
 
 # Grpc python library.
 # We don't install from the codes since it lacks setup.py.
@@ -100,4 +100,4 @@ cd ${DEPENDENCY_PATH}/grpc-java/compiler
 # Other Python modules.
 pip install -U shortuuid
 pip install -U bllipparser
-pip install git+https://github.com/leebird/glog
+pip install -U glog
