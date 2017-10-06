@@ -14,11 +14,12 @@ class DocHelper(object):
         self.doc = doc
 
     def char_range(self, sentence):
-        token_start = sentence.token_start
-        token_end = sentence.token_end
-        char_start = self.doc.token[token_start].char_start
-        char_end = self.doc.token[token_end].char_end
-        return char_start, char_end
+        # token_start = sentence.token_start
+        # token_end = sentence.token_end
+        # char_start = self.doc.token[token_start].char_start
+        # char_end = self.doc.token[token_end].char_end
+        # return char_start, char_end
+        return sentence.char_start, sentence.char_end
 
     def char_range_in_sentence(self, proto_obj, sentence):
         sent_char_start, _ = self.char_range(sentence)
@@ -264,12 +265,14 @@ class DocHelper(object):
         return args
 
     def entity_in_sentence(self, sentence):
-        token_start = sentence.token_start
-        token_end = sentence.token_end
+        # token_start = sentence.token_start
+        # token_end = sentence.token_end
 
+        char_start = sentence.char_start
+        char_end = sentence.char_end
         entities = []
         for entity in self.doc.entity.values():
-            if entity.token_start >= token_start and entity.token_end <= token_end:
+            if entity.char_start >= char_start and entity.char_end <= char_end:
                 entities.append(entity)
 
         return entities
@@ -390,6 +393,12 @@ class DocHelper(object):
         return relation
 
     def fill_entity_using_char_offset(self, entity):
+        for sentence in self.doc.sentence:
+            if sentence.char_start <= entity.char_start and \
+                            sentence.char_end >= entity.char_end:
+                entity.sentence_index = sentence.index
+                break
+
         found_token_range = False
         for token in self.doc.token:
             if token.char_start <= entity.char_start <= token.char_end:
@@ -402,20 +411,14 @@ class DocHelper(object):
         if not found_token_range:
             entity.token_start = -1
             entity.token_end = -1
-            entity.sentence_index = -1
-            glog.warning('Entity token range not found: {} {} {}'.format(
-                self.doc.doc_id, entity.duid, self.text(entity)))
+            # entity.sentence_index = -1
+            # glog.warning('Entity token range not found: {} {} {}'.format(
+            #     self.doc.doc_id, entity.duid, self.text(entity)))
             return
 
         assert entity.token_start <= entity.token_end, (str(entity),
                                                         self.text(entity),
                                                         str(self.doc.doc_id))
-
-        for sentence in self.doc.sentence:
-            if sentence.token_start <= entity.token_start and \
-                            sentence.token_end >= entity.token_end:
-                entity.sentence_index = sentence.index
-                break
 
     def fill_all_entity_using_char_offset(self):
         for entity_id, entity in self.doc.entity.items():
