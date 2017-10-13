@@ -99,9 +99,9 @@ public class StanfordUtil {
         return sentence_map;
     }
     
-	public DocumentProto.Document parseUsingBllip(DocumentProto.Document protoDoc,
-                                                  Map<String, String> sentences,
-                                                  Map<String, String> parses ) {
+    public DocumentProto.Document parseUsingBllip(DocumentProto.Document protoDoc,
+						  Map<String, String> sentences,
+						  Map<String, String> parses ) {
         String text = protoDoc.getText();
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
     
@@ -221,9 +221,9 @@ public class StanfordUtil {
     }
 
     public DocumentProto.Document parseUsingBllipEDG(DocumentProto.Document protoDoc,
-                                                  Map<String, String> sentences,
-                                                  Map<String, String> parses,
-												  EdgRulesProto.EdgRules protoRules) {
+						     Map<String, String> sentences,
+						     Map<String, String> parses,
+						     EdgRulesProto.EdgRules protoRules) {
         String text = protoDoc.getText();
 		List<EdgRulesProto.Rule> rules = protoRules.getRulesList();
         //List<DocumentProto.Rule> rules = protoDoc.getRulesList();
@@ -236,15 +236,23 @@ public class StanfordUtil {
         int sentIndex = 0;
         int charIndex = 0;
 
+	HashMap<Integer, String> charEntityMap = new HashMap<Integer, String>();
+	for (Map.Entry<String, DocumentProto.Entity> entry : protoDoc.getEntityMap().entrySet()) {
+	    DocumentProto.Entity entity = entry.getValue();
+	    for (int i = entity.getCharStart(); i <= entity.getCharEnd(); i++) {
+		charEntityMap.put(i, entity.getEntityType());
+	    }
+	}
+
         for (int i = 0; i < sentences.size(); i++) {
             // We use sentence order as sentence id.
             String sentence_id = Integer.toString(i);
             String sentence_text = sentences.get(sentence_id);
             String parse = parses.get(sentence_id);
             // Starting character offset of current sentence.
-            int currIndex = text.indexOf(sentence_text, charIndex);
+            charIndex = text.indexOf(sentence_text, charIndex);
             // Starting point for next search.
-            charIndex += sentence_text.length();
+            // charIndex += sentence_text.length();
 
             if (parse == null) {
                 // We skip sentences with no parse, but the necessary index
@@ -271,6 +279,8 @@ public class StanfordUtil {
 
             // Save the parse in penn tree bank format.
             sbuilder.setParse(parse);
+	    sbuilder.setCharStart(charIndex);
+	    sbuilder.setCharEnd(charIndex + sentence_text.length() - 1);
 
             for (Tree leaf : leaves) {
                 if (sentenceBoundary == -1) {
@@ -286,12 +296,12 @@ public class StanfordUtil {
                 String pos = preTerminal.label().value();
                 String unescaped = BllipUtil.unescape(word);
                 String lemma = ((HasLemma) leaf.label()).lemma();
-                int wordCharStart = text.indexOf(unescaped, currIndex);
+                int wordCharStart = text.indexOf(unescaped, charIndex);
 
                 assert wordCharStart >= 0 : sentence_text;
 
                 int wordCharEnd = wordCharStart + unescaped.length() - 1;
-                currIndex = wordCharEnd + 1;
+                charIndex = wordCharEnd + 1;
 
                 // Note that if any of the field is the default value, it woun't be printed.
                 // For example, if the first token is "I", the its char_start, char_end and
@@ -336,7 +346,17 @@ public class StanfordUtil {
             UniversalEnglishGrammaticalStructure sd = new UniversalEnglishGrammaticalStructure(tree);
             SemanticGraph dependencies = new SemanticGraph(sd.typedDependenciesCCprocessed());
 
-			//String depString = dependencies.toFormattedString();
+	    // Set entity type for all tokens.
+	    for(IndexedWord word : dependencies.vertexSet()) {
+		String entity_type = charEntityMap.get(word.beginPosition());
+		if (entity_type == null)
+		    entity_type = charEntityMap.get(word.endPosition());
+		// Set token entity type.
+		if (entity_type != null)
+		    word.setNER(entity_type);
+	    }
+
+	    //String depString = dependencies.toFormattedString();
 
             //Semregex Matching done : Samir
             for(EdgRulesProto.Rule rule : rules) {
