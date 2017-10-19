@@ -55,11 +55,11 @@ public class StanfordUtil {
         loadPipeline();
     }
 
-//    public StanfordUtil(String annotators) {
-//        this.annotators = annotators;
-//        this.maxParseSeconds = 0;
-//        loadPipeline();
-//    }
+    //    public StanfordUtil(String annotators) {
+    //        this.annotators = annotators;
+    //        this.maxParseSeconds = 0;
+    //        loadPipeline();
+    //    }
 
     private void loadPipeline() {
         // Initialize StanfordNLP pipeline.
@@ -225,7 +225,7 @@ public class StanfordUtil {
 						     Map<String, String> parses,
 						     EdgRulesProto.EdgRules protoRules) {
         String text = protoDoc.getText();
-		List<EdgRulesProto.Rule> rules = protoRules.getRulesList();
+	List<EdgRulesProto.Rule> rules = protoRules.getRulesList();
         //List<DocumentProto.Rule> rules = protoDoc.getRulesList();
     
         DocumentProto.Document.Builder dbuilder = protoDoc.toBuilder();
@@ -360,9 +360,12 @@ public class StanfordUtil {
 
             //Semregex Matching done : Samir
             for(EdgRulesProto.Rule rule : rules) {
-                String ruleID = rule.getIdent(); String ruleRegex = rule.getRegex();
+                String ruleID = rule.getIdent(); 
+		String ruleRegex = rule.getRegex();
                 List <EdgRulesProto.Action> actions = rule.getActionsList();
                 SemgrexPattern pat = SemgrexPattern.compile(ruleRegex);
+		if (ruleID.equals("conj_prop_2"))
+		    System.out.println(pat);
                 SemgrexMatcher mat = pat.matcher(dependencies);
                 buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap, dependencies);
             }
@@ -502,33 +505,35 @@ public class StanfordUtil {
         // dbuilder.clearText();
         return dbuilder.build();
     }
+
     private void buildExtraDependency(DocumentProto.Sentence.Builder sbuilder,
                                       SemgrexMatcher mat,
                                       List <EdgRulesProto.Action> actions,
                                       String ruleID,
                                       HashMap<Integer, Integer> indexMap,
                                       SemanticGraph dependencies) {
+
         LinkedList<SemanticGraphEdge> newEdges = new LinkedList<SemanticGraphEdge>();
         while (mat.find()) {
-                ///////////////////////////////////////
+	    ///////////////////////////////////////
+	    Set<String> matchedNodeNames = mat.getNodeNames();
+	    Set<String> relNames = mat.getRelationNames();
+
             for (EdgRulesProto.Action action : actions) {
                 String govNodeName = action.getGovNode();
                 String depNodeName = action.getDepNode();
                 String edgeLabel = action.getEdgeLabel();
-                Set<String> matchedNodeNames = mat.getNodeNames();
 
-				//Adding Functionality to name relations
-				//and replace it in edge labels of actions
-				Set <String> relNames = mat.getRelationNames();
-				for (String relName : relNames) {
-					String relEdgeStr = mat.getRelnString(relName);
-					if(edgeLabel.contains(relName)) {
-						String newEdgeLabel = edgeLabel.replaceFirst(relName,relEdgeStr);
-						edgeLabel = newEdgeLabel;
-						//System.out.println("Samir :" + relName +":" +relEdgeStr);
-					}
-				}
-				/////////////////////////////////////////
+		//Adding Functionality to name relations
+		//and replace it in edge labels of actions
+		for (String relName : relNames) {
+		    String relEdgeStr = mat.getRelnString(relName);
+		    if(edgeLabel.contains(relName)) {
+			String newEdgeLabel = edgeLabel.replaceFirst(relName,relEdgeStr);
+			edgeLabel = newEdgeLabel;
+		    }
+		}
+		/////////////////////////////////////////
                 int addDep = 0; //if both action node name found adddDep >=2
                 for(String matchNodeName : matchedNodeNames) {
                     if(govNodeName.equals(matchNodeName)) { addDep = addDep +1;}
@@ -552,17 +557,20 @@ public class StanfordUtil {
                     //dependencies.addEdge(govNode,depNode,GrammaticalRelation.valueOf(Language.English,edgeLabel ), Double.NEGATIVE_INFINITY, false);
                     
                     sbuilder.addDependencyExtra(depExBuilder);
-                    //System.out.println("Samir :" + ruleId + ruleRegex);
-                    //System.out.println(govNode.toString() + ">" + edgeLabel + ">" + depNode.toString());
+		    // System.out.println(ruleID + ": " + govNode.toString() + ">" + edgeLabel + ">" + depNode.toString());
                 }
             }    
         }
         //After the rules have been applied add the new edges to the semantic graph (old one)
         for(SemanticGraphEdge newEdge: newEdges) {
-            dependencies.addEdge(newEdge);
+	    // Only add non-existing edges.
+	    // SemanticGraph.containsEdge() only checks two vertices but not relation.
+	    // Use getEdge() instead.
+	    if (dependencies.getEdge(newEdge.getGovernor(), newEdge.getDependent(), newEdge.getRelation()) == null)
+		dependencies.addEdge(newEdge);
         }
-        
     }
+
     private void buildDependency(DocumentProto.Sentence.Builder sbuilder,
                                  SemanticGraph dependencies,
                                  HashMap<Integer, Integer> indexMap) {

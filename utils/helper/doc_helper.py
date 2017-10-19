@@ -332,10 +332,11 @@ class DocHelper(object):
         for entity_id in entity_list:
             del self.doc.entity[entity_id]
 
-    def char_offset_to_entity(self, char_offset):
+    def char_offset_to_entity(self, char_start, char_end):
         entities = []
         for entity_id, entity in self.doc.entity.items():
-            if entity.char_start <= char_offset <= entity.char_end:
+            if RangeHelper.overlap((entity.char_start, entity.char_end),
+                                   (char_start, char_end)):
                 entities.append(entity)
         return entities
 
