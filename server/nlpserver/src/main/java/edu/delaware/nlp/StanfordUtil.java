@@ -211,6 +211,10 @@ public class StanfordUtil {
             // this is the Stanford dependency graph of the current sentence
             // Generated from Billip parser.
             UniversalEnglishGrammaticalStructure sd = new UniversalEnglishGrammaticalStructure(tree);
+	    // Here is the problem, advcl:compared_to changed to advcl only in 3.8.
+	    // https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/trees/UniversalEnglishGrammaticalStructure.java
+	    // search for compared_to
+	    // System.out.println(sd.typedDependenciesCCprocessed());
             SemanticGraph dependencies = new SemanticGraph(sd.typedDependenciesCCprocessed());
                 
             buildDependency(sbuilder, dependencies, indexMap);
@@ -240,7 +244,9 @@ public class StanfordUtil {
 	for (Map.Entry<String, DocumentProto.Entity> entry : protoDoc.getEntityMap().entrySet()) {
 	    DocumentProto.Entity entity = entry.getValue();
 	    for (int i = entity.getCharStart(); i <= entity.getCharEnd(); i++) {
-		charEntityMap.put(i, entity.getEntityType());
+		String prev = (charEntityMap.get(i) == null) ? "" : charEntityMap.get(i);
+		// <PROTEIN><PROTEIN_PART>
+		charEntityMap.put(i, prev+"<"+entity.getEntityType()+">");
 	    }
 	}
 
@@ -348,12 +354,18 @@ public class StanfordUtil {
 
 	    // Set entity type for all tokens.
 	    for(IndexedWord word : dependencies.vertexSet()) {
-		String entity_type = charEntityMap.get(word.beginPosition());
-		if (entity_type == null)
-		    entity_type = charEntityMap.get(word.endPosition());
-		// Set token entity type.
-		if (entity_type != null)
-		    word.setNER(entity_type);
+		String start_type = charEntityMap.get(word.beginPosition());
+		String end_type = charEntityMap.get(word.endPosition()-1);
+		start_type = start_type == null ? "" : start_type;
+		end_type = end_type == null ? "" : end_type;
+		String curr_type = word.ner() == null ? "" : word.ner();
+		
+		// Sometimes start_type and end_type are different, we use the longest one.
+		// N-glycan: CHEMICAL, glycan: SUGAR
+		if (start_type.length() > curr_type.length())
+		    word.setNER(start_type);
+		if (end_type.length() > curr_type.length())
+		    word.setNER(end_type);
 	    }
 
 	    //String depString = dependencies.toFormattedString();
@@ -364,8 +376,6 @@ public class StanfordUtil {
 		String ruleRegex = rule.getRegex();
                 List <EdgRulesProto.Action> actions = rule.getActionsList();
                 SemgrexPattern pat = SemgrexPattern.compile(ruleRegex);
-		if (ruleID.equals("conj_prop_2"))
-		    System.out.println(pat);
                 SemgrexMatcher mat = pat.matcher(dependencies);
                 buildExtraDependency(sbuilder, mat, actions, ruleID, indexMap, dependencies);
             }
@@ -600,8 +610,8 @@ public class StanfordUtil {
             // Only toString can get the collapsed and ccprocessed relations.
             // Neither getShortName() and getLongName() can. Don't know why.
             String depTag = edge.getRelation().toString();
-            // String depTag = edge.getRelation().getShortName();
-
+	    //String depTag = edge.getRelation().getShortName();
+	    //System.out.println(edge.getRelation().getShortName() + " " + edge.getRelation().getLongName() + " "+ edge.getRelation().toString() + " "+ edge.getRelation().getSpecific());
             DocumentProto.Sentence.Dependency.Builder depBuilder = DocumentProto.Sentence.Dependency.newBuilder();
             depBuilder.setDepIndex(depIndex);
             depBuilder.setGovIndex(govIndex);
