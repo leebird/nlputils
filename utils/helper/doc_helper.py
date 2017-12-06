@@ -633,8 +633,8 @@ class DocHelper(object):
                                           entity_text)
                 f.write(line)
 
-            event_line = '{0}\t{1}:{2} {3}\t{4}\n'
-            rel_line = '{0}\t{1} {2}\t{3}\n'
+            event_line = '{0}\t{1}:{2} {3}\t{4}'
+            rel_line = '{0}\t{1} {2}\t{3}'
             for er_id, event_or_rel in self.doc.relation.items():
                 arguments = defaultdict(list)
                 for arg in event_or_rel.argument:
@@ -643,7 +643,9 @@ class DocHelper(object):
                 attributes = defaultdict(list)
                 for attr in event_or_rel.attribute:
                     attributes[attr.key].append(attr.value)
-                attributes_json = json.dumps(attributes)
+                attributes_json = ''
+                if len(attributes) > 0:
+                    attributes_json = json.dumps(attributes)
 
                 all_args = []
                 for role, args in arguments.items():
@@ -662,14 +664,14 @@ class DocHelper(object):
                                              event_or_rel.relation_type,
                                              arguments['Trigger'][0],
                                              ' '.join(all_args),
-                                             attributes_json)
-                    f.write(line)
+                                             attributes_json).strip()
+                    f.write(line+'\n')
                 else:
                     line = rel_line.format(event_or_rel.duid,
                                            event_or_rel.relation_type,
                                            ' '.join(all_args),
-                                           attributes_json)
-                    f.write(line)
+                                           attributes_json).strip()
+                    f.write(line+'\n')
 
     def base_phrase_and_head(self):
         base_phrase = []
@@ -841,7 +843,6 @@ class DocHelper(object):
             open_tag, close_tag = get_tag(entity, sentence)
             tags.append(open_tag)
             tags.append(close_tag)
-
         return self.tag_tags_in_text(text, tags)
 
     def smart_tag_entity_in_text(self, text, entities):
@@ -969,3 +970,50 @@ class DocHelper(object):
 
         masked.text = ''.join(slices)
         return masked
+
+    @staticmethod
+    def recover_mask_entity(masked_doc, original_doc):
+        ori_helper = DocHelper(original_doc)
+        masked_entities = sorted(masked_doc.entity.values(), key=lambda t:t.char_start)
+
+        # for token in masked_doc.token:
+        #     print(token.word, token.char_start, token.char_end, sep='|', end=' ')
+        # print()
+
+        for index, t in enumerate(masked_entities):
+            if t.duid not in original_doc.entity:
+                # Usually t is a trigger recognized by EDG, so it's
+                # not in the original doc.
+                continue
+
+            # Add original entity snippet.
+            ori_entity = original_doc.entity[t.duid]
+            ori_text = ori_helper.text(ori_entity)
+
+            # Calculate diff.
+            diff = len(ori_text) - (t.char_end - t.char_start + 1)
+
+            # Update masked text and entity char_end.
+            masked_doc.text = masked_doc.text[:t.char_start] + ori_text \
+                              + masked_doc.text[t.char_end+1:]
+            t.char_end = t.char_start + len(ori_text) - 1
+
+            token = masked_doc.token[t.token_start]
+            token.char_start = t.char_start
+            token.char_end = t.char_end
+
+            token.word = token.word.replace(t.entity_type, ori_text)
+            token.lemma = token.lemma.replace(t.entity_type.lower(), ori_text)
+
+            # Update latter tokens char_start and char_end.
+            for token in masked_doc.token[t.token_end+1:]:
+                if token.char_start < 0 or token.char_end < 0:
+                    continue
+                token.char_start += diff
+                token.char_end += diff
+
+            # Update latter entities char_start and char_end.
+            for latter in masked_entities[index+1:]:
+                latter.char_start += diff
+                latter.char_end += diff
+
