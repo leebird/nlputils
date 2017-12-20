@@ -5,8 +5,11 @@ from ..dependency.graph import DependencyGraph
 from ..dependency.path import PathDirection
 from ..constituent.path import undirected_shortest_const_path
 from ..helper import RangeHelper
-from ..brat.mapping import entity_type_to_str
-import resource.specific as spec
+# from ..brat.mapping import entity_type_to_str
+from nltk.stem import PorterStemmer
+
+
+STEMMER = PorterStemmer()
 
 
 def extract_dep_lemma_path(helper, graph, src_entity, dst_entity):
@@ -106,57 +109,56 @@ def extract_lemma_on_dep_path(helper, graph, src_entity, dst_entity):
 
     return result
 
-
-def extract_ev_walk_features(helper, graph, src_entity, dst_entity):
-    src_head = helper.entity_head_token(graph, src_entity)
-    dst_head = helper.entity_head_token(graph, dst_entity)
-
-    src_type = entity_type_to_str[src_entity.entity_type]
-    dst_type = entity_type_to_str[dst_entity.entity_type]
-
-    path = undirected_shortest_dep_path(graph, src_head.index, dst_head.index)
-    if path is None or len(path) == 0:
-        return path, path
-
-    result = ['t:{}'.format(src_type)]
-
-    # The first element stores the relation from the src_entity head
-    # to a previous token, which is not on the path. The last element
-    # stores the relation from the token to the dst_entity head.
-    for e in path[1:-1]:
-        if e.direction_from_prev == PathDirection.dep_to_gov:
-            result.append('<-')
-            result.append(e.relation_with_prev)
-            result.append('<-')
-            result.append(helper.doc.token[e.token_index].lemma)
-        else:
-            result.append('->')
-            result.append(e.relation_with_prev)
-            result.append('->')
-            result.append(helper.doc.token[e.token_index].lemma)
-
-    if path[-1].direction_from_prev == PathDirection.dep_to_gov:
-        result.append('<-')
-        result.append(path[-1].relation_with_prev)
-        result.append('<-')
-        result.append('t:{}'.format(dst_type))
-    else:
-        result.append('->')
-        result.append(path[-1].relation_with_prev)
-        result.append('->')
-        result.append('t:{}'.format(dst_type))
-
-    e_walk = []
-    v_walk = []
-    for i in range(0, len(result), 4):
-        if len(result[i:i+5]) == 5:
-            v_walk.append(''.join(result[i:i+5]))
-
-    for i in range(2, len(result), 4):
-        if len(result[i:i+5]) == 5:
-            e_walk.append(''.join(result[i:i+5]))
-    # print(result)
-    return e_walk, v_walk
+# def extract_ev_walk_features(helper, graph, src_entity, dst_entity):
+#     src_head = helper.entity_head_token(graph, src_entity)
+#     dst_head = helper.entity_head_token(graph, dst_entity)
+#
+#     src_type = entity_type_to_str[src_entity.entity_type]
+#     dst_type = entity_type_to_str[dst_entity.entity_type]
+#
+#     path = undirected_shortest_dep_path(graph, src_head.index, dst_head.index)
+#     if path is None or len(path) == 0:
+#         return path, path
+#
+#     result = ['t:{}'.format(src_type)]
+#
+#     # The first element stores the relation from the src_entity head
+#     # to a previous token, which is not on the path. The last element
+#     # stores the relation from the token to the dst_entity head.
+#     for e in path[1:-1]:
+#         if e.direction_from_prev == PathDirection.dep_to_gov:
+#             result.append('<-')
+#             result.append(e.relation_with_prev)
+#             result.append('<-')
+#             result.append(helper.doc.token[e.token_index].lemma)
+#         else:
+#             result.append('->')
+#             result.append(e.relation_with_prev)
+#             result.append('->')
+#             result.append(helper.doc.token[e.token_index].lemma)
+#
+#     if path[-1].direction_from_prev == PathDirection.dep_to_gov:
+#         result.append('<-')
+#         result.append(path[-1].relation_with_prev)
+#         result.append('<-')
+#         result.append('t:{}'.format(dst_type))
+#     else:
+#         result.append('->')
+#         result.append(path[-1].relation_with_prev)
+#         result.append('->')
+#         result.append('t:{}'.format(dst_type))
+#
+#     e_walk = []
+#     v_walk = []
+#     for i in range(0, len(result), 4):
+#         if len(result[i:i+5]) == 5:
+#             v_walk.append(''.join(result[i:i+5]))
+#
+#     for i in range(2, len(result), 4):
+#         if len(result[i:i+5]) == 5:
+#             e_walk.append(''.join(result[i:i+5]))
+#     # print(result)
+#     return e_walk, v_walk
 
 
 def extract_relation_dep_lemma_path(helper, relation, role_1, role_2):
@@ -285,11 +287,11 @@ class SyntaticExtractor(object):
                 if e.direction_from_prev == PathDirection.dep_to_gov:
                     src_to_root.append(e.relation_with_prev)
                     if index == curr_lex:
-                        src_to_root.append('w:'+spec.STEMMER.stem(lemma))
+                        src_to_root.append('w:'+STEMMER.stem(lemma))
                 else:
                     root_to_src.append(e.relation_with_prev)
                     if index == curr_lex:
-                        root_to_src.append('w:'+spec.STEMMER.stem(lemma))
+                        root_to_src.append('w:'+STEMMER.stem(lemma))
 
             if curr_lex == len(src_to_root) - 2:
                 root = src_to_root.pop()
@@ -318,12 +320,12 @@ class SyntaticExtractor(object):
         prev = self.dep_path[0]
         for e in self.dep_path[1:]:
             prev_token = self.doc.token[prev.token_index]
-            prev_stem = spec.STEMMER.stem(prev_token.lemma.lower())
+            prev_stem = STEMMER.stem(prev_token.lemma.lower())
             if len(vwalks) == 0:
                 prev_stem = first_word
 
             curr_token = self.doc.token[e.token_index]
-            curr_stem = spec.STEMMER.stem(curr_token.lemma.lower())
+            curr_stem = STEMMER.stem(curr_token.lemma.lower())
             if len(vwalks) == len(self.dep_path) - 2:
                 curr_stem = last_word
 
@@ -346,7 +348,7 @@ class SyntaticExtractor(object):
         for e in self.dep_path[2:]:
             prev_relation = prev.relation_with_prev
             prev_token = self.doc.token[prev.token_index]
-            prev_stem = spec.STEMMER.stem(prev_token.lemma.lower())
+            prev_stem = STEMMER.stem(prev_token.lemma.lower())
             if prev.direction_from_prev == PathDirection.dep_to_gov:
                 prev_arrow = '<-'
             else:

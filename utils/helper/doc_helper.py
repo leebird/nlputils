@@ -232,6 +232,13 @@ class DocHelper(object):
             if token.char_start <= offset <= token.char_end:
                 return token
 
+    def entity_with_offset(self, char_start, char_end):
+        entities = []
+        for t in self.doc.entity.values():
+            if t.char_start == char_start and t.char_end == char_end:
+                entities.append(t)
+        return entities
+
     @staticmethod
     def all_attribute(proto_obj, key):
         attrs = []
@@ -280,8 +287,8 @@ class DocHelper(object):
     def entity_sentence_index(self, entity):
         index = set()
         for sentence in self.doc.sentence:
-            if sentence.token_start <= entity.token_start and \
-                            sentence.token_end >= entity.token_end:
+            if sentence.char_start <= entity.char_start and \
+                            sentence.char_end >= entity.char_end:
                 index.add(sentence.index)
         return index
 
@@ -655,7 +662,7 @@ class DocHelper(object):
                         one_arg = '{}:{}'.format(role, arg)
                         all_args.append(one_arg)
 
-                if len(arguments['Trigger']) > 1:
+                if len(arguments['Trigger']) > 0:
                     assert len(arguments['Trigger']) == 1
 
                 if event_or_rel.duid.startswith('E'):
@@ -932,6 +939,8 @@ class DocHelper(object):
                 if entity_id_1 == entity_id_2:
                     continue
                 if RangeHelper.char_range_overlap(entity_1, entity_2):
+                    # print(entity_1, entity_2)
+                    # print(self.text(entity_1), self.text(entity_2))
                     return True
         return False
 
@@ -957,7 +966,9 @@ class DocHelper(object):
             if exclude_type is not None and entity.entity_type in exclude_type:
                 slices.append(self.text(entity))
             else:
-                slices.append(entity.entity_type)
+                # Not using entity type as replacement because it may change
+                # the parsing, ENTITY seems to affect the parsing less.
+                slices.append('BIOENTITY')
 
             entity_end = entity.char_end
             entity.char_start = mask_start
@@ -999,11 +1010,20 @@ class DocHelper(object):
             t.char_end = t.char_start + len(ori_text) - 1
 
             token = masked_doc.token[t.token_start]
-            token.char_start = t.char_start
-            token.char_end = t.char_end
+            # No need to update char_start, as it's already updated in
+            # latter loop. And if we update char_start here, it will
+            # be a problem if two entities in a token, e.g., H3-Lys9.
+            # Lys-9's char_start is not the token's char_start.
+            #token.char_start = t.char_start
+            token.char_end += diff
 
-            token.word = token.word.replace(t.entity_type, ori_text)
-            token.lemma = token.lemma.replace(t.entity_type.lower(), ori_text)
+            token.word = token.word.replace('BIOENTITY', ori_text, 1)
+            # lemma could be upper or lower case.
+            token.lemma = token.lemma.replace('bioentity', ori_text, 1)
+            token.lemma = token.lemma.replace('BIOENTITY', ori_text, 1)
+
+            sent = masked_doc.sentence[t.sentence_index]
+            sent.char_end += diff
 
             # Update latter tokens char_start and char_end.
             for token in masked_doc.token[t.token_end+1:]:
@@ -1011,6 +1031,11 @@ class DocHelper(object):
                     continue
                 token.char_start += diff
                 token.char_end += diff
+
+            # Update latter sentences char_start and char_end.
+            for sent in masked_doc.sentence[t.sentence_index+1:]:
+                sent.char_start += diff
+                sent.char_end += diff
 
             # Update latter entities char_start and char_end.
             for latter in masked_entities[index+1:]:
