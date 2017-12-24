@@ -944,7 +944,7 @@ class DocHelper(object):
                     return True
         return False
 
-    def mask_entity(self, exclude_type=None):
+    def mask_entity(self, mask_duids=None):
         if self.has_overlap_entity():
             raise ValueError('Overlapped entities: ' + self.doc.doc_id)
 
@@ -963,12 +963,15 @@ class DocHelper(object):
             slices.append(self.doc.text[start:entity.char_start])
             mask_start += len(slices[-1])
 
-            if exclude_type is not None and entity.entity_type in exclude_type:
+            if mask_duids is not None and entity.duid not in mask_duids:
                 slices.append(self.text(entity))
             else:
                 # Not using entity type as replacement because it may change
                 # the parsing, ENTITY seems to affect the parsing less.
-                slices.append('BIOENTITY')
+                if self.text(entity).endswith('s'):
+                    slices.append('BIOENTITIES')
+                else:
+                    slices.append('BIOENTITY')
 
             entity_end = entity.char_end
             entity.char_start = mask_start
@@ -1018,9 +1021,12 @@ class DocHelper(object):
             token.char_end += diff
 
             token.word = token.word.replace('BIOENTITY', ori_text, 1)
+            token.word = token.word.replace('BIOENTITIES', ori_text, 1)
             # lemma could be upper or lower case.
             token.lemma = token.lemma.replace('bioentity', ori_text, 1)
+            token.lemma = token.lemma.replace('bioentities', ori_text, 1)
             token.lemma = token.lemma.replace('BIOENTITY', ori_text, 1)
+            token.lemma = token.lemma.replace('BIOENTITIES', ori_text, 1)
 
             sent = masked_doc.sentence[t.sentence_index]
             sent.char_end += diff
