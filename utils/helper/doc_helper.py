@@ -28,9 +28,13 @@ class DocHelper(object):
 
     def text(self, proto_obj):
         char_start, char_end = -1, -1
-        if type(proto_obj) == document_pb2.Sentence or \
-                        type(proto_obj) == document_pb2.Sentence.Constituent:
+        if type(proto_obj) == document_pb2.Sentence:
             char_start, char_end = self.char_range(proto_obj)
+        elif type(proto_obj) == document_pb2.Sentence.Constituent:
+            token_start = self.doc.token[proto_obj.token_start]
+            token_end = self.doc.token[proto_obj.token_end]
+            char_start = token_start.char_start
+            char_end = token_end.char_end
         elif type(proto_obj) == document_pb2.Entity or type(proto_obj) == document_pb2.Token:
             char_start, char_end = proto_obj.char_start, proto_obj.char_end
 
@@ -302,6 +306,7 @@ class DocHelper(object):
         # If the last token is a punctuation, it may not have heads.
         # So in the following codes we update the head with token that
         # has heads.
+
         head = tokens[-1].index
 
         # Find head token.
@@ -729,7 +734,8 @@ class DocHelper(object):
                 if not parent.label.startswith('N') and not parent.label.startswith('J') and not parent.label.startswith('P'):
                     break
                 curr = parent
-            if curr is not None:
+
+            if curr is not None and curr.label.startswith('N'):
                 return curr
 
     def get_noun_phrase_head(self, constituents, token):
@@ -926,6 +932,7 @@ class DocHelper(object):
         return ''.join(slices)
 
     def tag_entity_in_sentence(self, sentence, entities):
+        entities = [t for t in entities if t.sentence_index == sentence.index]
         try:
             tagged = self.smart_tag_entity_in_sentence(sentence, entities)
         except Exception:
@@ -933,10 +940,13 @@ class DocHelper(object):
 
         return tagged
 
-    def has_overlap_entity(self):
-        for entity_id_1, entity_1 in self.doc.entity.items():
-            for entity_id_2, entity_2 in self.doc.entity.items():
-                if entity_id_1 == entity_id_2:
+    def has_overlap_entity(self, mask_duids=None):
+        entities = self.doc.entity.values()
+        if mask_duids is not None:
+            entities = [t for t in self.doc.entity.values() if t.duid in mask_duids]
+        for entity_1 in entities:
+            for entity_2 in entities:
+                if entity_1.duid == entity_2.duid:
                     continue
                 if RangeHelper.char_range_overlap(entity_1, entity_2):
                     # print(entity_1, entity_2)
@@ -969,7 +979,7 @@ class DocHelper(object):
                 # Not using entity type as replacement because it may change
                 # the parsing, ENTITY seems to affect the parsing less.
                 if self.text(entity).endswith('s'):
-                    slices.append('BIOENTITIES')
+                    slices.append('ENTITIES')
                 else:
                     slices.append('BIOENTITY')
 
@@ -1021,12 +1031,12 @@ class DocHelper(object):
             token.char_end += diff
 
             token.word = token.word.replace('BIOENTITY', ori_text, 1)
-            token.word = token.word.replace('BIOENTITIES', ori_text, 1)
+            token.word = token.word.replace('ENTITIES', ori_text, 1)
             # lemma could be upper or lower case.
             token.lemma = token.lemma.replace('bioentity', ori_text, 1)
-            token.lemma = token.lemma.replace('bioentities', ori_text, 1)
+            token.lemma = token.lemma.replace('entities', ori_text, 1)
             token.lemma = token.lemma.replace('BIOENTITY', ori_text, 1)
-            token.lemma = token.lemma.replace('BIOENTITIES', ori_text, 1)
+            token.lemma = token.lemma.replace('ENTITIES', ori_text, 1)
 
             sent = masked_doc.sentence[t.sentence_index]
             sent.char_end += diff
