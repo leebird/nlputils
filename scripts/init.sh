@@ -5,30 +5,32 @@ set -e
 
 # Get path information.
 source "$(dirname ${BASH_SOURCE})"/common_path.sh
+source "$(dirname ${BASH_SOURCE})"/export_path.sh
 
 # Create dependency folder.
 mkdir -p ${DEPENDENCY_PATH}
 
 # Download maven.
-#cd ${DEPENDENCY_PATH}
-#wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-#tar -zxvf ./apache-maven-3.3.9-bin.tar.gz
-#mv ./apache-maven-3.3.9 ./apache-maven
+cd ${DEPENDENCY_PATH}
+wget http://mirrors.koehn.com/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+tar -zxvf ./apache-maven-3.3.9-bin.tar.gz
+mv ./apache-maven-3.3.9 ./apache-maven
 
 # Version numbers of the dependency libraries.
 # Check https://github.com/google/protobuf/releases for correct tag.
-PROTOBUF_VERSION="v3.4.1"
+PROTOBUF_VERSION="v3.6.1"
 # Check https://github.com/grpc/grpc/releases for correct tag.
-GRPC_VERSION="v1.6.3"
-GRPC_PY_VERSION='1.6.3'
+GRPC_VERSION="v1.19.0"
+GRPC_PY_VERSION='1.19.0'
 # Check https://github.com/grpc/grpc-java/releases for correct tag.
-GRPC_JAVA_VERSION="v1.6.1"
+GRPC_JAVA_VERSION="v1.19.0"
 
 # Download packages from Github.
 # https://github.com/google/protobuf/releases
 cd ${DEPENDENCY_PATH}
 git clone https://github.com/google/protobuf
 cd protobuf
+git submodule update --init --recursive
 git checkout tags/${PROTOBUF_VERSION}
 
 # The C++ based grpc stack, including python and other languages.
