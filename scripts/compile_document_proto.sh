@@ -22,7 +22,7 @@ ${ROOT_PATH}/proto/document.proto
 protoc --plugin=protoc-gen-grpc-java=${DEPENDENCY_PATH}/grpc-java/compiler/build/exe/java_plugin/protoc-gen-grpc-java \
 --proto_path=${ROOT_PATH}/proto --grpc-java_out=${ROOT_PATH}/protolib/java \
 --java_out=${ROOT_PATH}/protolib/java ${ROOT_PATH}/proto/document.proto
-javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.4.1.jar" \
+javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.7.1.jar" \
 ${ROOT_PATH}/protolib/java/edu/delaware/nlp/DocumentProto.java
 
 ###EDG Rules Proto
@@ -35,7 +35,7 @@ ${ROOT_PATH}/proto/edgRules.proto
 protoc --plugin=protoc-gen-grpc-java=${DEPENDENCY_PATH}/grpc-java/compiler/build/exe/java_plugin/protoc-gen-grpc-java \
 --proto_path=${ROOT_PATH}/proto --grpc-java_out=${ROOT_PATH}/protolib/java --java_out=${ROOT_PATH}/protolib/java \
 ${ROOT_PATH}/proto/edgRules.proto
-javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.4.1.jar" \
+javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.7.1.jar" \
 ${ROOT_PATH}/protolib/java/edu/delaware/nlp/EdgRulesProto.java
 
 # Compile rpc proto.
@@ -48,5 +48,5 @@ ${ROOT_PATH}/proto/rpc.proto
 protoc --plugin=protoc-gen-grpc-java=${DEPENDENCY_PATH}/grpc-java/compiler/build/exe/java_plugin/protoc-gen-grpc-java \
 --proto_path=${ROOT_PATH}/proto --grpc-java_out=${ROOT_PATH}/protolib/java --java_out=${ROOT_PATH}/protolib/java \
 ${ROOT_PATH}/proto/rpc.proto
-javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.4.1.jar:${ROOT_PATH}/protolib/java" \
+javac -classpath "${DEPENDENCY_PATH}/protobuf/java/core/target/protobuf-java-3.7.1.jar:${ROOT_PATH}/protolib/java" \
 ${ROOT_PATH}/protolib/java/edu/delaware/nlp/RpcProto.java

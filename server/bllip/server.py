@@ -1,12 +1,13 @@
 from __future__ import unicode_literals, print_function
 import time
 from bllip_process_pool import BllipManager
-from protolib.python import rpc_pb2
+from protolib.python import rpc_pb2, rpc_pb2_grpc
 import glog
 import sys
+import grpc
+from concurrent import futures
 
-
-class BllipServicer(rpc_pb2.BetaBllipParserServicer):
+class BllipServicer(rpc_pb2_grpc.BllipParserServicer):
     def __init__(self, pool_size=1):
         self.pool_size = pool_size
         glog.info('Waiting for BLLIP manager init...')
@@ -25,9 +26,8 @@ class BllipServicer(rpc_pb2.BetaBllipParserServicer):
 
 def serve(pool_size=1):
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-    server = rpc_pb2.beta_create_BllipParser_server(BllipServicer(pool_size),
-                                                    pool_size=10,
-                                                    default_timeout=600)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    rpc_pb2_grpc.add_BllipParserServicer_to_server(BllipServicer(pool_size), server)
     server.add_insecure_port('[::]:8901')
     server.start()
     try:
