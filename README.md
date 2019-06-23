@@ -5,6 +5,7 @@
 - Run `bash docker/run.sh`. This should bring up BLLIP server, nlputils server and visual web interface.
 - You can bring up multiple servers using `docker/run.sh`, as long as you specify different ports each time.
 - The server will use IP and ports of the host machine.
+- To stop the server: docker rm -f CONTAINER_NAME
 
 ## Preparation
 - Create a folder under /data/Applications/user_name/ (Disk I/O under this folder is much faster than home directory)
