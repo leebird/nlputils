@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 mkdir -p model
-PYTHONPATH=../.. python server.py $1
+PYTHONPATH=../.. python server.py $1 $2
 

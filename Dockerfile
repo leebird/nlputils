@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 MAINTAINER Gang Li <leemagpie@gmail.com>
 
 RUN apt update && apt upgrade -y
@@ -8,12 +8,13 @@ RUN apt install build-essential -y
 RUN apt install python python-pip -y
 
 # Install java 8.
-RUN apt install -y software-properties-common && \
-    add-apt-repository ppa:webupd8team/java -y && \
-    apt update && \
-    echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections && \
-    apt install -y oracle-java8-installer && \
-    apt clean
+RUN apt install openjdk-11-jdk openjdk-11-jre -y
+#RUN apt install -y software-properties-common && \
+#    add-apt-repository ppa:webupd8team/java -y && \
+#    apt update && \
+#    echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections && \
+#    apt install -y oracle-java8-installer && \
+#    apt clean
 
 RUN apt install git -y
 RUN apt install curl -y
@@ -21,6 +22,7 @@ RUN apt install unzip -y
 RUN apt install dh-autoreconf -y
 RUN apt install maven -y
 RUN apt install supervisor -y
+RUN apt install wget -y
 
 RUN pip install --upgrade pip
 
@@ -45,7 +47,8 @@ COPY visual /nlputils/visual
 COPY test /nlputils/test
 
 # Init modules.
-RUN cd /nlputils/server/nlpserver/ && sh init.sh
+# Init Stanford CoreNLP with version in supervisord.conf.
+# RUN cd /nlputils/server/nlpserver/ && sh init.sh
 RUN cd /nlputils/server/bllip && python init.py
 RUN cd /nlputils/visual && sh init.sh
 

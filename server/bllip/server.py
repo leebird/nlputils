@@ -24,11 +24,11 @@ class BllipServicer(rpc_pb2_grpc.BllipParserServicer):
         return response
 
 
-def serve(pool_size=1):
+def serve(pool_size=1, port=8901):
     _ONE_DAY_IN_SECONDS = 60 * 60 * 24
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     rpc_pb2_grpc.add_BllipParserServicer_to_server(BllipServicer(pool_size), server)
-    server.add_insecure_port('[::]:8901')
+    server.add_insecure_port('[::]:{}'.format(port))
     server.start()
     try:
         while True:
@@ -42,6 +42,10 @@ if __name__ == '__main__':
         pool_size = int(sys.argv[1])
     except:
         pool_size = 1
-    serve(pool_size)
+    try:
+        port = int(sys.argv[2])
+    except:
+        port = 8901
+    serve(pool_size, port)
 
 

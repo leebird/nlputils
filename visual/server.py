@@ -3,12 +3,14 @@ from protolib.python import document_pb2, rpc_pb2
 from utils.rpc.grpcapi import GrpcInterface
 from utils.helper import DocHelper
 import json
+import sys
+
 
 app = Flask(__name__, static_url_path='/brat', static_folder='brat')
 
 
 def process_one_document(request):
-    interface = GrpcInterface(host='128.4.20.169')
+    interface = GrpcInterface(host='localhost')
     # interface = grpcapi.GrpcInterface(host='localhost')
     response = interface.process_document(request)
     assert len(response.document) == 1
@@ -99,11 +101,14 @@ def highlight():
         text = text.replace('<Subcellular_location>', '<span style="color:red; font-weight:bold">')
         text = text.replace('</Subcellular_location>', '</span>')
 
-        lines = text.split('\n')
+        lines = sorted(text.split('\n'), key=lambda a:len(a))
         return render_template('highlight.html', lines=lines)
     else:
         return render_template('highlight.html')
 
 if __name__ == "__main__":
     app.debug = False
-    app.run(host='0.0.0.0')
+    port = 5000
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    app.run(host='0.0.0.0', threaded=True, port=port)

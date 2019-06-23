@@ -13,6 +13,8 @@ public class BllipUtil {
         pennTreeUnEscape.put("-RCB-", "}");
         pennTreeUnEscape.put("-LSB-", "[");
         pennTreeUnEscape.put("-RSB-", "]");
+        pennTreeUnEscape.put("``", "\"");
+        pennTreeUnEscape.put("''", "\"");
     }
 
     public static String unescape(String word) {
