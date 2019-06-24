@@ -2,9 +2,14 @@
 
 ## Use docker to launch server
 - `docker/run.sh` defines a few variables, including Stanford CoreNLP version. Modify it as needed.
-- Run `bash docker/run.sh`. This should bring up BLLIP server, nlputils server and visual web interface.
+### Run server
+- Before running `docker/run.sh`, make sure you change the three ports to your own ones, and also use a your own container name specified by `--name`
+- Run `bash docker/run.sh`. This should bring up BLLIP server, nlputils server and visual web interface in a few minutes.
 - You can bring up multiple servers using `docker/run.sh`, as long as you specify different ports each time.
 - The server will use IP and ports of the host machine.
+- `docker logs CONTAINER_NAME` to view the terminal outputs, useful for checking if the server is ready
+- You can also use the visual web interface to check if the server is ready. Input a simple sentence and see if you get the parsing results.
+### Stop server
 - To stop the server: docker rm -f CONTAINER_NAME
 
 ## Preparation
