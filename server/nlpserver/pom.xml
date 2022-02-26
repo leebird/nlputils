@@ -9,7 +9,7 @@
     <name>nlpserver</name>
     <url>http://maven.apache.org</url>
     <properties>
-      <nlpversion>3.6.0</nlpversion>
+      <nlpversion>4.4.0</nlpversion>
     </properties>
     <dependencies>
         <dependency>
